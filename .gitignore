@@ -1,0 +1,12 @@
+# Build output
+esp32-usb-pad/build/
+esp32-usb-pad/managed_components/
+esp32-usb-pad/sdkconfig
+esp32-usb-pad/sdkconfig.old
+esp32-usb-pad/dependencies.lock
+esp32-usb-pad/main/macro_script.h
+
+# Node / Python
+node_modules/
+__pycache__/
+*.pyc

@@ -7,13 +7,14 @@ Every switch 1/2 firmware 20.x.x and up to current version (23.0.1) should work.
 
 Tested at Switch 1 fw 22.5.0, Switch 2 fw 20.4.0 and 23.0.1  
 
-Two components:
+Three components:
 
 - **PicoSwitch** — clean, compilable Pico firmware (RP2040 + RP2350) that types a chat-XSS payload into the Switch (USB HID macro).
 
   Default payload = the Remote JS Loader bootstrap (exploit core + TCP loader).
 
   Ships with `compress.js` (chat transport: terser -> deflateRaw -> base-25 chunked `img/onerror` lines with censor armor).
+- **esp32-usb-pad** — the same USB HID macro for **ESP32-S3** instead of a Pico (composite gamepad + keyboard, same descriptors, same `payload.txt`). Builds with ESP-IDF; see `esp32-usb-pad/README.md`.
 - **installer-creator** — given any JavaScript payload, produces the boot-persistent installer (`XSTRIG.Civ7Save` trigger written to savedata) to send through the Remote JS Loader.
 
 ## Layout
@@ -24,7 +25,7 @@ Two components:
 
 [Video Tutorial](https://www.reddit.com/r/switch2hacks/comments/1xll4wf/civswitch_hack_start_to_finish/) from switch2hacks reddit
 
-1. **Build + flash** the loader UF2 (see PicoSwitch/README.md).
+1. **Build + flash** the loader firmware — `PicoSwitch` (see `PicoSwitch/README.md`) or `esp32-usb-pad` (see `esp32-usb-pad/README.md`).
 
    On the Switch, go to "System" menu and change system language to English(US).  
    Go to "Controllers & Accessories" menu and change USB Keyboard to English(US).  
@@ -67,6 +68,25 @@ node compress.js               # reads ../core.js -> payload.txt
 cmake --preset pico2 && cmake --build --preset pico2    # RP2350 -> build-pico2/src/civ7-pico2.uf2
 cmake --preset pico1 && cmake --build --preset pico1    # RP2040 -> build-pico1/src/civ7-pico1.uf2
 ```
+
+## Build (ESP32 firmware)
+
+Requires ESP-IDF v6.1 and an ESP32-S3 board with native USB (not ESP32 classic).
+
+```
+export IDF_PATH=~/esp/esp-idf
+export IDF_TOOLS_PATH=~/.espressif
+source "$IDF_PATH/export.sh"
+
+cd PicoSwitch && npm install && node compress.js && cd ..   # writes PicoSwitch/payload.txt
+cd esp32-usb-pad
+idf.py set-target esp32s3
+idf.py build
+idf.py -p /dev/cu.usbmodemXXXX flash
+```
+
+Flags are CMake cache values, e.g. `idf.py -DLANG_JP=0 -DMACRO_REPEAT=0 build`.
+See `esp32-usb-pad/README.md` for wiring, timing, and troubleshooting.
 
 ## Credits
 
