@@ -84,11 +84,12 @@ esptool --chip esp32s3 -p /dev/cu.usbmodemXXXX -b 460800 \
 
 ## Usage
 
-1. On the console: **System Settings → System → Language** = English (US).
+1. If your console allows it: **System Settings → System → Language** =
+   English (US). A JP-only console cannot do this — skip to step 2 and build
+   with `-DLANG_JP=1`.
 2. **System Settings → Controllers and Accessories → USB Keyboard** =
-   English (US).
-   On a JP console this also fixes the IME; keep `LANG_JP=1` if you leave the
-   console in Japanese.
+   English (US). On a JP-only console keep the language as-is and build with
+   `-DLANG_JP=1`, which toggles the JP IME to direct input before every line.
 3. Plug the board into the console.
 4. Start Civilization 7, load any save, open the in-game chat.
 5. The macro starts ~2 s after USB enumeration:
@@ -108,7 +109,7 @@ All are CMake cache values, so they can be set per build without editing code:
 
 | Flag | Default | Meaning |
 |---|---:|---|
-| `LANG_JP` | `1` | Emit `Alt+Space` before every payload line (Japanese IME → English input). Set `0` for an English-locale console. |
+| `LANG_JP` | `1` | **JP consoles only.** Emit `Alt+Space` before every payload line (toggle the Japanese IME to direct English input). Set `0` on an English-locale console — it saves 232 ms per line (~20 s per run) and is the only difference between the two builds. |
 | `MACRO_REPEAT` | `1` | Repeat the whole macro forever. `0` = run once. |
 | `MACRO_REPEAT_DELAY_MS` | `5000` | Delay between rounds when repeating. |
 | `PAYLOAD_FILE` | `../PicoSwitch/payload.txt` | Payload to embed. |
@@ -118,6 +119,10 @@ Example — English console, single run:
 ```sh
 idf.py -DLANG_JP=0 -DMACRO_REPEAT=0 build
 ```
+
+The `LANG_JP` default is `1` because the hardware this was written on is a
+JP-only console, which cannot be switched to English. Everyone else should
+build with `-DLANG_JP=0`.
 
 `idf.py` keeps these in `build/`, so pass them again (or use
 `idf.py menuconfig` → *Component config* is not used here) after `fullclean`.

@@ -5,7 +5,8 @@ Only the **1.0.0** version of the game in physical cartridge is supported.
 
 Every switch 1/2 firmware 20.x.x and up to current version (23.0.1) should work.  
 
-Tested at Switch 1 fw 22.5.0, Switch 2 fw 20.4.0 and 23.0.1  
+Tested on Switch 1 fw 22.5.0, Switch 2 fw 20.4.0 and 23.0.1.  
+`esp32-usb-pad` additionally tested on a JP-only Switch 2 20.4.0.
 
 Three components:
 
@@ -33,18 +34,80 @@ Three components:
    These are required to type "English" letters (code) using USB keyboard.  
    (Higher fw might not need to change system language as they support typing english without language change)  
    
-   NOTE for JP-only Switch2 : 
-   1. If you have another Switch, you can connect the two consoles via local wireless multiplayer and plug the Pico on the other device, allowing it to send the payload over the network.  
-   2. If you're on a higher fw version (I'm not sure exact version), you can simply try plugging the Pico and see if it can type English text without changing the system language.  
+   NOTE for JP-only Switch 2: no system language change is possible, skip it and
+   see [Japanese consoles](#japanese-consoles-jp-only-switch-2) below.  
+   If you have another Switch, you can also connect the two consoles via local
+   wireless multiplayer and plug the Pico on the other device, letting it send
+   the payload over the network.
    
    Connect to Internet using [90DNS](https://gitlab.com/a/90dns) to block Nintendo servers.  
    
    Then launch game and navigate main menu -> MULTIPLAYER -> WIRELESS -> CREATE GAME -> HOST LOBBY -> CHAT then plug the Pico in (in docked mode, focus the chat box first to receive Pico input).  
 
-   The Pico types the chat XSS (~87 lines, ~15 min); the Remote JS Loader comes up on the console (TCP :9026) for that session.  
-2. **Install the persistent boot trigger** from the PC: `python installer-creator/install.py <console-ip>` — uploads the save template, splices the compressed payload into it on-console, wipes `save:/saves/Single/`, and writes the trigger.
+   The firmware types the chat XSS (~87 lines); the Remote JS Loader comes up on
+   the console (TCP :9026) for that session. This takes ~7 min on ESP32-S3 and
+   ~15 min on a Pico.
+2. **Install the persistent boot trigger** from the PC, while the chat-XSS loader
+   is still running (do not close the game first):
+
+   ```sh
+   cd installer-creator
+   npm install            # once: terser is needed by compress_stage.js
+   python install.py <console-ip>
+   ```
+
+   It uploads the save template, splices the compressed payload into it
+   on-console, removes the previous `XSTRIG.Civ7Save` trigger only, and writes
+   the new one.
+
+   Before installing, check the loader is alive with
+   `python send_js.py <console-ip> payloads/helloworld.js`; it should print
+   `Hello from remote JS!`.
 3. From then on, every boot: main menu -> Load Game -> the payload runs from savedata (and if the payload is the loader, :9026 is up at boot — and survives console sleep/wake).  
 4. You can revert system language after installer finished.  
+
+## Japanese consoles (JP-only Switch 2)
+
+**Only needed on a JP console.** On an English console skip this entirely and
+build with `LANG_JP=0` (the only difference between the two builds is this flag).
+
+On a JP console the chat input stays in Japanese IME mode, so plain ASCII
+keystrokes open the candidate window and the payload arrives as kana — the XSS
+never runs. `esp32-usb-pad` has a build flag that handles this; `PicoSwitch` has
+no IME toggle and needs the console in English input mode.
+
+| Build | JP handling |
+|---|---|
+| `PicoSwitch` | none — relies on the console's language/keyboard language being English |
+| `esp32-usb-pad` | `Alt+Space` per line, `-DLANG_JP=1` (default is 1) |
+
+`Alt+Space` toggles the IME to direct (English) input, so each line is typed as
+literal ASCII. It is emitted **per line**, not once, because every payload line
+is a fresh chat message: `Esc`, `A`, `Alt+Space`, type line, `Enter`, `Enter`.
+
+Build for the two cases:
+
+```sh
+# JP console (repo default is LANG_JP=1)
+idf.py -DLANG_JP=1 build
+
+# English console: no IME toggle, 232 ms (~20 s per run) faster
+idf.py -DLANG_JP=0 build
+```
+
+Notes:
+
+- JP-only Switch 2 on 20.4.0 has a language lock: the system language cannot be
+  switched to English from Settings. On newer firmware the page is visible again,
+  but the console writes `ja` back on the next boot. `LANG_JP=1` works either way,
+  without touching the system language.
+- The USB keyboard layout must be **English (US)** in
+  *System Settings → Controllers and Accessories → USB Keyboard*. With the IME
+  toggle the system language itself can stay Japanese.
+- If you are not sure: build both and try `LANG_JP=0` first. On a console with no
+  IME the extra `Alt+Space` is usually ignored (at worst it adds a leading space,
+  which the chat transport tolerates); a JP console without the toggle never runs
+  the payload.
 
 ## Sending payloads (`send_js.py`)
 
@@ -81,9 +144,13 @@ source "$IDF_PATH/export.sh"
 cd PicoSwitch && npm install && node compress.js && cd ..   # writes PicoSwitch/payload.txt
 cd esp32-usb-pad
 idf.py set-target esp32s3
-idf.py build
+idf.py -DLANG_JP=0 build      # English console; use -DLANG_JP=1 on a JP-only console
 idf.py -p /dev/cu.usbmodemXXXX flash
 ```
+
+`-DLANG_JP=1` adds an `Alt+Space` before every line so the JP IME switches to
+direct input; on a JP-only console that is the only way to type the payload.
+See [Japanese consoles](#japanese-consoles-jp-only-switch-2).
 
 Flags are CMake cache values, e.g. `idf.py -DLANG_JP=0 -DMACRO_REPEAT=0 build`.
 See `esp32-usb-pad/README.md` for wiring, timing, and troubleshooting.
