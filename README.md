@@ -90,6 +90,9 @@ See `esp32-usb-pad/README.md` for wiring, timing, and troubleshooting.
 
 ## Credits
 
+- Original [CivSwitch](https://github.com/Gezine/CivSwitch) project by
+  [Gezine](https://github.com/Gezine) — exploit core, chat transport,
+  PicoSwitch firmware and installer.
 - The JS exploit core in `core.js` referenced [inject.js](https://github.com/NetflixNHack/Netflix-N-Hack/blob/main/inject.js) from [Netflix-N-Hack](https://github.com/NetflixNHack/Netflix-N-Hack) and its fork by [ufm42](https://github.com/ufm42/Netflix-N-Hack/blob/main/inject.js) 
 - The PicoSwitch firmware is based on [Pico-Switch-Controller](https://github.com/Element2424/Pico-Switch-Controller) by [Element2424](https://github.com/Element2424)
 
