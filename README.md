@@ -30,13 +30,13 @@ Three components:
 
    On the Switch, go to "System" menu and change system language to English(US).  
    Go to "Controllers & Accessories" menu and change USB Keyboard to English(US).  
-   
+
    These are required to type "English" letters (code) using USB keyboard.  
    (Higher fw might not need to change system language as they support typing english without language change)  
    
-   NOTE for JP-only Switch 2: no system language change is possible, skip it and
-   see [Japanese consoles](#japanese-consoles-jp-only-switch-2) below.  
-   If you have another Switch, you can also connect the two consoles via local
+   NOTE for JP-only Switch2 :
+   1. use a esp32-s3 board and check [Japanese consoles](#japanese-consoles-jp-only-switch-2) below.  
+   2. If you have another Switch, you can also connect the two consoles via local
    wireless multiplayer and plug the Pico on the other device, letting it send
    the payload over the network.
    
@@ -60,9 +60,6 @@ Three components:
    on-console, removes the previous `XSTRIG.Civ7Save` trigger only, and writes
    the new one.
 
-   Before installing, check the loader is alive with
-   `python send_js.py <console-ip> payloads/helloworld.js`; it should print
-   `Hello from remote JS!`.
 3. From then on, every boot: main menu -> Load Game -> the payload runs from savedata (and if the payload is the loader, :9026 is up at boot — and survives console sleep/wake).  
 4. You can revert system language after installer finished.  
 
@@ -97,17 +94,9 @@ idf.py -DLANG_JP=0 build
 
 Notes:
 
-- JP-only Switch 2 on 20.4.0 has a language lock: the system language cannot be
-  switched to English from Settings. On newer firmware the page is visible again,
-  but the console writes `ja` back on the next boot. `LANG_JP=1` works either way,
-  without touching the system language.
 - The USB keyboard layout must be **English (US)** in
   *System Settings → Controllers and Accessories → USB Keyboard*. With the IME
   toggle the system language itself can stay Japanese.
-- If you are not sure: build both and try `LANG_JP=0` first. On a console with no
-  IME the extra `Alt+Space` is usually ignored (at worst it adds a leading space,
-  which the chat transport tolerates); a JP console without the toggle never runs
-  the payload.
 
 ## Sending payloads (`send_js.py`)
 
