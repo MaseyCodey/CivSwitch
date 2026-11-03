@@ -20,8 +20,10 @@ typedef struct __attribute((packed, aligned(1))) {
   uint8_t keycode[6];
 } KeyboardReport;
 
-// HAT report (4 bits)
-/*                                  I think the left and right are wrong this is the orginal // Update I was right, at least for the switch these are backwards at least if you are looking at the conntroller
+// HAT report (4 bits), standard HID order: 0=up ... 8=neutral.
+// Verified on Switch 2 (2026-11): 0x02=right, 0x06=left. The old mirrored table
+// here swapped left/right; it was never exercised because the payload macro
+// only ever used HAT_NOTHING.
 #define SWITCH_USB_HAT_UP 0x00
 #define SWITCH_USB_HAT_UPRIGHT 0x01
 #define SWITCH_USB_HAT_RIGHT 0x02
@@ -30,17 +32,6 @@ typedef struct __attribute((packed, aligned(1))) {
 #define SWITCH_USB_HAT_DOWNLEFT 0x05
 #define SWITCH_USB_HAT_LEFT 0x06
 #define SWITCH_USB_HAT_UPLEFT 0x07
-#define SWITCH_USB_HAT_NOTHING 0x08
-*/
-
-#define SWITCH_USB_HAT_UP 0x00
-#define SWITCH_USB_HAT_UPRIGHT 0x07
-#define SWITCH_USB_HAT_RIGHT 0x06
-#define SWITCH_USB_HAT_DOWNRIGHT 0x05
-#define SWITCH_USB_HAT_DOWN 0x04
-#define SWITCH_USB_HAT_DOWNLEFT 0x03
-#define SWITCH_USB_HAT_LEFT 0x02
-#define SWITCH_USB_HAT_UPLEFT 0x01
 #define SWITCH_USB_HAT_NOTHING 0x08
 
 // Button report (16 bits)
