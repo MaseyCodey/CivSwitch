@@ -145,7 +145,7 @@ cd PicoSwitch && npm install && node compress.js && cd ..   # writes PicoSwitch/
 cd esp32-usb-pad
 idf.py set-target esp32s3
 idf.py -DLANG_JP=0 build      # English console; use -DLANG_JP=1 on a JP-only console
-idf.py -p /dev/cu.usbmodemXXXX flash
+idf.py -p /dev/cu.usbmodemXXXX flash   # hold BOOT while plugging the board in
 ```
 
 `-DLANG_JP=1` adds an `Alt+Space` before every line so the JP IME switches to

@@ -66,30 +66,41 @@ build/partition_table/partition-table.bin
 
 ## Flash
 
-Connect the board's **native USB port** (not the UART/CH340 port) and:
+Put the board into download mode **before** it enumerates:
+
+1. Hold **BOOT**.
+2. Plug the board's **native USB port** (not the UART/CH340 port) into the PC.
+3. Release **BOOT**.
+
+Then:
 
 ```sh
 idf.py -p /dev/cu.usbmodemXXXX flash
 ```
 
-If the port is missing: hold **BOOT**, tap **RESET**, release **BOOT**, then
-flash.
+Hold-BOOT-while-plugging is the verified sequence on this board.  If you skip the BOOT hold, the firmware
+boots normally and immediately starts typing the macro into the PC (the macro
+runs as soon as USB enumerates, on any host), and `idf.py` will not see a port.
 
-For a single-file image:
+If no `/dev/cu.usbmodemXXXX` appears, try another USB cable or port, or check board documentation; the chip is only visible to `idf.py` while in download mode.
+
+For a single-file image (same download mode):
 
 ```sh
 esptool --chip esp32s3 -p /dev/cu.usbmodemXXXX -b 460800 \
   write-flash 0x0 build/esp32-usb-pad_flashed.bin
 ```
 
+After flashing, unplug the board from the PC and connect it to the console —
+it will boot straight into the macro.
+
 ## Usage
 
 1. If your console allows it: **System Settings → System → Language** =
-   English (US). A JP-only console cannot do this — skip to step 2 and build
-   with `-DLANG_JP=1`.
+   English (US). A JP-only console cannot change this: build with
+   `-DLANG_JP=1` (auto-toggles the JP IME), then continue with step 2.
 2. **System Settings → Controllers and Accessories → USB Keyboard** =
-   English (US). On a JP-only console keep the language as-is and build with
-   `-DLANG_JP=1`, which toggles the JP IME to direct input before every line.
+   English (US). 
 3. Plug the board into the console.
 4. Start Civilization 7, load any save, open the in-game chat.
 5. The macro starts ~2 s after USB enumeration:
