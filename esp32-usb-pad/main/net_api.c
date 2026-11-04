@@ -381,6 +381,7 @@ extern const uint8_t index_html_end[] asm("_binary_index_html_end");
 
 static esp_err_t root_get(httpd_req_t *req) {
     httpd_resp_set_type(req, "text/html; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     return httpd_resp_send(req, (const char *)index_html_start,
                            index_html_end - index_html_start);
 }
@@ -396,6 +397,7 @@ static esp_err_t status_get(httpd_req_t *req) {
              (long long)(esp_timer_get_time() / 1000000),
              esp_ota_get_running_partition()->label, s_lang, s_region);
     httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     return httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
 }
 
@@ -519,6 +521,7 @@ static esp_err_t wifi_scan_get(httpd_req_t *req) {
     }
     sink_printf(&sink, "]}");
     httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     return httpd_resp_send(req, buf, sink.len);
 }
 
