@@ -15,6 +15,7 @@ typedef enum {
     MACRO_OP_PAD,
     MACRO_OP_BOTH,
     MACRO_OP_KEY_TIMES,
+    MACRO_OP_IME,      /* Alt+Space: switch the JP IME to alphanumeric */
     MACRO_OP_END,
 } MacroOp;
 
@@ -46,6 +47,8 @@ typedef struct {
      {(uint16_t)(buttons), (hat), (lx), (ly), (rx), (ry), 0}}
 #define KEY_TIMES(n, ms, mod, k) \
     {MACRO_OP_KEY_TIMES, (ms), (n), {(uint8_t)(mod), 0, {(k), 0, 0, 0, 0, 0}}, MACRO_PAD_NEUTRAL}
+#define IME_TOGGLE(ms) \
+    {MACRO_OP_IME, (ms), 1, MACRO_KBD_RELEASED, MACRO_PAD_NEUTRAL}
 #define END() {MACRO_OP_END, 0, 1, MACRO_KBD_RELEASED, MACRO_PAD_NEUTRAL}
 
 #endif

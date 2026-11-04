@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>esp32-usb-pad</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#121a2b; --panel2:#0e1626; --border:#1f2b44;
+  --text:#e6edf7; --muted:#8ea3c4; --accent:#3b82f6; --accent2:#60a5fa;
+  --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0a0f1c,#0b1020 40%);color:var(--text);
+  font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.badge{font-size:11.5px;color:var(--muted);border:1px solid var(--border);
+  background:var(--panel2);padding:3px 9px;border-radius:999px}
+.grid{display:grid;gap:14px}
+@media(min-width:820px){.grid-2{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.card h2{font-size:13px;margin:0 0 10px;color:#cfe0ff;font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card h2 small{color:var(--muted);font-weight:400;font-size:11.5px}
+.status-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:520px){.status-row{grid-template-columns:repeat(4,1fr)}}
+.pill{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;
+  display:flex;flex-direction:column;gap:2px}
+.pill span{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.pill b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.dot{width:7px;height:7px;border-radius:50%;background:#475569;display:inline-block}
+.dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(34,197,94,.16)}
+.dot.off{background:#475569}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);
+  border-radius:9px;padding:7px 12px;cursor:pointer;transition:.12s}
+button:hover{border-color:#33507e;background:#16223a}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{background:#2f6fe0}
+button.ghost{background:transparent}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.55;cursor:default}
+input,textarea,select{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);
+  border-radius:9px;padding:8px 10px;width:100%}
+select{cursor:pointer}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#3b82f6}
+input[type=file]{padding:6px 8px;width:auto;max-width:100%}
+label{font-size:11.5px;color:var(--muted);display:block;margin:8px 0 4px}
+textarea{min-height:66px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+pre{background:#080d18;border:1px solid var(--border);border-radius:10px;padding:10px;
+  margin:8px 0 0;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:#c7d6ee;max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.muted{color:var(--muted);font-size:11.5px}
+.wifi-list{margin-top:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  max-height:210px;overflow-y:auto;background:var(--panel2)}
+.wifi-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;
+  border-bottom:1px solid #162034}
+.wifi-item:last-child{border-bottom:0}
+.wifi-item:hover{background:#16223a}
+.wifi-item.sel{background:rgba(59,130,246,.14);box-shadow:inset 2px 0 0 var(--accent)}
+.wifi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:13px}
+.bars i{width:3px;background:#3b4a66;border-radius:1px}
+.bars i.on{background:var(--accent2)}
+.lock{font-size:11px;color:var(--muted);width:14px;text-align:center}
+details.wifi{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:0}
+details.wifi>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;
+  align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:#cfe0ff}
+details.wifi>summary::-webkit-details-marker{display:none}
+details.wifi>summary::after{content:"▾";color:var(--muted);transition:.15s}
+details.wifi[open]>summary::after{transform:rotate(180deg)}
+details.wifi .body{padding:0 16px 16px}
+.pad{display:grid;gap:12px;margin-top:4px}
+.pad-top{display:flex;justify-content:center;gap:8px}
+.bumper{min-width:62px;padding:8px 0;font-weight:600;font-size:12px}
+.cross{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:5px}
+.cross .g{display:flex;align-items:center;justify-content:center;border:1px solid var(--border);
+  background:var(--panel2);border-radius:10px;cursor:pointer;font-weight:600;user-select:none;font-size:14px}
+.cross .g:hover{background:#16223a;border-color:#33507e}
+.cross .g:active,.cross .g.hit{background:var(--accent);border-color:var(--accent);color:#fff}
+.cross .sp{background:transparent;border:0;cursor:default}
+.pad-mid{display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap}
+.center-btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-width:220px}
+.center-btns button{font-size:12px;padding:6px 8px}
+.seq{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.seq input{width:110px}
+.hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6}
+.msg{min-height:16px;font-size:12px;color:var(--accent2)}
+.msg.err{color:#fca5a5}
+code{background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎮 esp32-usb-pad</h1>
+    <div class="hdr-right">
+      <span class="badge" data-i18n="badge">USB HID · Wi-Fi control</span>
+      <button class="ghost" id="btnLang" title="Language">中文</button>
+    </div>
+  </header>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h2><span data-i18n="status">Status</span><small id="pollInfo">--</small></h2>
+      <div class="status-row">
+        <div class="pill"><span><i class="dot" id="dotUsb"></i><i data-i18n="usb">USB</i></span><b id="valUsb">-</b></div>
+        <div class="pill"><span><i class="dot" id="dotBusy"></i><i data-i18n="action">Action</i></span><b id="valBusy">-</b></div>
+        <div class="pill"><span data-i18n="lanIp">LAN IP</span><b id="valIp">-</b></div>
+        <div class="pill"><span data-i18n="uptime">Uptime</span><b id="valUp">-</b></div>
+      </div>
+      <div class="hint" id="netHint"></div>
+    </div>
+
+    <div class="card">
+      <h2><span data-i18n="pad">Virtual pad</span><small data-i18n="padHint">default hold 80 ms</small></h2>
+      <div class="seq">
+        <span class="muted" data-i18n="hold">Hold</span>
+        <input id="hold" type="number" min="20" max="2000" step="10" value="80">
+        <span class="muted">ms</span>
+        <span class="muted" style="margin-left:auto"><i data-i18n="lastPress">Last</i>: <code id="lastBtn">-</code></span>
+      </div>
+      <div class="pad">
+        <div class="pad-top">
+          <button class="bumper" data-btn="zl">ZL</button>
+          <button class="bumper" data-btn="l">L</button>
+          <button class="bumper" data-btn="r">R</button>
+          <button class="bumper" data-btn="zr">ZR</button>
+        </div>
+        <div class="pad-mid">
+          <div class="cross">
+            <div class="sp"></div><div class="g" data-btn="up">▲</div><div class="sp"></div>
+            <div class="g" data-btn="left">◀</div><div class="sp"></div><div class="g" data-btn="right">▶</div>
+            <div class="sp"></div><div class="g" data-btn="down">▼</div><div class="sp"></div>
+          </div>
+          <div class="center-btns">
+            <button data-btn="minus">－ Minus</button>
+            <button data-btn="plus">＋ Plus</button>
+            <button data-btn="home">🏠 HOME</button>
+            <button data-btn="capture">📷 Capture</button>
+            <button data-btn="l3">L3</button>
+            <button data-btn="r3">R3</button>
+          </div>
+          <div class="cross">
+            <div class="sp"></div><div class="g" data-btn="x">X</div><div class="sp"></div>
+            <div class="g" data-btn="y">Y</div><div class="sp"></div><div class="g" data-btn="a">A</div>
+            <div class="sp"></div><div class="g" data-btn="b">B</div><div class="sp"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <details class="wifi" id="wifiBox" style="margin-top:14px">
+    <summary>
+      <span><i data-i18n="wifi">Wi-Fi</i> · <span id="wifiSummary">--</span></span>
+    </summary>
+    <div class="body">
+      <div class="row" style="justify-content:space-between">
+        <span class="muted" id="curWifi">--</span>
+        <button class="ghost" id="btnScan" style="font-size:11.5px;padding:4px 10px" data-i18n="scan">Scan</button>
+      </div>
+      <div class="wifi-list" id="wifiList"><div class="wifi-item"><span class="wifi-name muted" data-i18n="scanHint">Tap “Scan”.</span></div></div>
+      <label data-i18n="ssid">SSID</label>
+      <input id="ssid" placeholder="2.4GHz Wi-Fi" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label data-i18n="password">Password</label>
+      <input id="pass" type="password" autocomplete="off" placeholder="">
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="btnSave" data-i18n="saveReboot">Save &amp; reboot</button>
+      </div>
+      <div class="hint" data-i18n="wifiNote">ESP32-S3 is 2.4 GHz only. The setup AP ESPNETPAD (192.168.4.1) stays available as a recovery path.</div>
+      <div class="msg" id="wifiMsg"></div>
+    </div>
+  </details>
+
+  <div class="grid grid-2" style="margin-top:14px">
+    <div class="card">
+      <h2><span data-i18n="macro">Macro</span><small data-i18n="macroTag">Civ7 chat-XSS payload</small></h2>
+      <div class="hint" style="margin-top:0" data-i18n="macroNote">This is the payload this project currently uses for Civilization VII (87 lines typed into the in-game chat). JP-only consoles need Alt+Space (IME toggle) before every line; international consoles do not.</div>
+      <label data-i18n="region">Console region</label>
+      <select id="region">
+        <option value="jp" data-i18n="regionJp">JP-only console (Alt+Space IME)</option>
+        <option value="intl" data-i18n="regionIntl">International console</option>
+      </select>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="btnBootstrap" data-i18n="runMacro">▶ Run macro</button>
+        <button id="btnStop" data-i18n="stop">⏹ Stop</button>
+      </div>
+      <div class="hint" data-i18n="macroHint">The macro only runs when the console has enumerated the device (USB = ready).</div>
+    </div>
+
+    <div class="card">
+      <h2><span data-i18n="type">Type text</span><small data-i18n="typeTag">US layout</small></h2>
+      <textarea id="text" placeholder=""></textarea>
+      <div class="row" style="margin-top:8px">
+        <button id="btnType" data-i18n="typeBtn">TYPE</button>
+        <button class="primary" id="btnTypeEnter" data-i18n="typeEnterBtn">TYPE + ENTER</button>
+      </div>
+      <div class="hint" data-i18n="typeNote">Printable ASCII only; use \n for a newline.</div>
+      <div class="msg" id="typeMsg"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2><span data-i18n="ota">Firmware update (OTA)</span><small id="otaSlot">-</small></h2>
+    <div class="row">
+      <input type="file" id="fw" accept=".bin,application/octet-stream">
+      <button class="primary" id="btnOta" data-i18n="otaUpload">Upload &amp; reboot</button>
+    </div>
+    <div class="hint" data-i18n="otaNote">Pick build/esp32-usb-pad.bin. It is written to the inactive OTA slot; a bad image rolls back automatically.</div>
+    <div class="msg" id="otaMsg"></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2><span data-i18n="log">Log</span><button class="ghost" id="btnClear" style="font-size:11.5px;padding:4px 10px" data-i18n="clear">Clear</button></h2>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const log = $('log');
+let wifiNets = [];
+let lang = 'en';
+let status = {};
+
+const STR = {
+  en: {
+    badge: 'USB HID · Wi-Fi control',
+    status: 'Status', usb: 'USB', action: 'Action', lanIp: 'LAN IP', uptime: 'Uptime',
+    ready: 'ready', notConnected: 'not connected', idle: 'idle', running: 'running',
+    pad: 'Virtual pad', padHint: 'default hold 80 ms', hold: 'Hold', lastPress: 'Last',
+    wifi: 'Wi-Fi', scan: 'Scan', scanHint: 'Tap “Scan”.', ssid: 'SSID', password: 'Password',
+    saveReboot: 'Save & reboot', wifiNote: 'ESP32-S3 is 2.4 GHz only. The setup AP ESPNETPAD (192.168.4.1) stays available as a recovery path.',
+    current: 'Current', notConfigured: 'not configured (AP mode)', scanning: 'Scanning…', noNetworks: 'No networks found',
+    macro: 'Macro', macroTag: 'Civ7 chat-XSS payload',
+    macroNote: 'This is the payload this project currently uses for Civilization VII (87 lines typed into the in-game chat). JP-only consoles need Alt+Space (IME toggle) before every line; international consoles do not.',
+    region: 'Console region',
+    regionJp: 'JP-only console (Alt+Space IME)', regionIntl: 'International console',
+    runMacro: '▶ Run macro', stop: '⏹ Stop',
+    macroHint: 'The macro only runs when the console has enumerated the device (USB = ready).',
+    type: 'Type text', typeTag: 'US layout', typeBtn: 'TYPE', typeEnterBtn: 'TYPE + ENTER',
+    typeNote: 'Printable ASCII only; use \\n for a newline.',
+    ota: 'Firmware update (OTA)', otaUpload: 'Upload & reboot',
+    otaNote: 'Pick build/esp32-usb-pad.bin. It is written to the inactive OTA slot; a bad image rolls back automatically.',
+    log: 'Log', clear: 'Clear', logReady: 'Ready.', chooseBin: 'Choose a .bin file first',
+    uploading: 'Uploading', uploadFail: 'Upload failed', saved: 'Saved, rebooting…',
+    needSsid: 'Pick or type an SSID first', lastPrefix: 'last', slot: 'slot',
+    scanDone: 'Scan done: ', networks: ' networks', offline: 'offline', msgSaved: 'Saved, rebooting…'
+  },
+  zh: {
+    badge: 'USB HID · Wi-Fi 控制',
+    status: '状态', usb: 'USB', action: '动作', lanIp: '局域网 IP', uptime: '运行时间',
+    ready: '已枚举', notConnected: '未连接', idle: '空闲', running: '执行中',
+    pad: '虚拟手柄', padHint: '默认按住 80ms', hold: '按住', lastPress: '当前',
+    wifi: 'Wi-Fi 配置', scan: '扫描附近网络', scanHint: '点“扫描附近网络”。', ssid: 'SSID', password: '密码',
+    saveReboot: '保存并重启', wifiNote: 'ESP32-S3 只支持 2.4GHz。热点 ESPNETPAD（192.168.4.1）会一直保留作为恢复通道。',
+    current: '当前', notConfigured: '未配置（AP 模式）', scanning: '扫描中…', noNetworks: '没有扫描到网络',
+    macro: '宏', macroTag: '《文明7》聊天 XSS payload',
+    macroNote: '这是本项目当前用于《文明7》的 payload（87 行，输入到游戏内聊天框）。日版专用机每行前需要 Alt+Space 切换输入法，国际版机器不需要。',
+    region: '机器版本',
+    regionJp: '日版专用机（Alt+Space 切输入法）', regionIntl: '国际版机器',
+    runMacro: '▶ 执行宏', stop: '⏹ 停止',
+    macroHint: '只有主机已枚举设备（USB = 已枚举）时宏才会执行。',
+    type: '打字', typeTag: 'US 布局', typeBtn: 'TYPE', typeEnterBtn: 'TYPE + ENTER',
+    typeNote: '仅支持可打印 ASCII；换行用 \\n。',
+    ota: '固件更新 (OTA)', otaUpload: '上传并重启',
+    otaNote: '选择 build/esp32-usb-pad.bin。写入非活动 OTA 槽位，坏固件会自动回滚。',
+    log: '日志', clear: '清空', logReady: '就绪。', chooseBin: '请先选择 .bin 文件',
+    uploading: '上传中', uploadFail: '上传失败', saved: '已保存，板子重启中…',
+    needSsid: '请先选择或输入 SSID', lastPrefix: '当前', slot: '槽位',
+    scanDone: '扫描完成：', networks: ' 个网络', offline: '离线', msgSaved: '已保存，板子重启中…'
+  }
+};
+const t = k => (STR[lang] && STR[lang][k]) || STR.en[k] || k;
+
+function applyLang(l){
+  lang = (l === 'zh') ? 'zh' : 'en';
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (STR[lang][key]) el.textContent = STR[lang][key];
+  });
+  $('btnLang').textContent = lang === 'zh' ? 'EN' : '中文';
+  $('text').placeholder = lang === 'zh' ? '要输入的文本' : 'Text to type';
+  $('pass').placeholder = lang === 'zh' ? 'Wi-Fi 密码' : 'Wi-Fi password';
+  $('ssid').placeholder = lang === 'zh' ? '2.4GHz Wi-Fi 名称' : '2.4GHz Wi-Fi name';
+  if (!log.textContent.trim() || log.dataset.placeholder === '1') {
+    log.dataset.placeholder = '1';
+    log.textContent = t('logReady');
+  }
+}
+
+function appendLog(txt){
+  const s = String(txt).trim();
+  if (!s) return;
+  if (log.dataset.placeholder === '1') { log.textContent = ''; log.dataset.placeholder = '0'; }
+  log.textContent += (log.textContent ? '\n' : '') + s;
+  log.scrollTop = log.scrollHeight;
+}
+
+async function cmd(line){
+  const r = await fetch('/cmd', {method:'POST', body:line});
+  const txt = await r.text();
+  appendLog(txt);
+  return txt;
+}
+
+/* ---------------- status ---------------- */
+async function poll(){
+  try{
+    const r = await fetch('/status');
+    status = await r.json();
+    $('dotUsb').className = 'dot ' + (status.mounted ? 'on' : 'off');
+    $('valUsb').textContent = status.mounted ? t('ready') : t('notConnected');
+    $('dotBusy').className = 'dot ' + (status.busy ? 'on' : 'off');
+    $('valBusy').textContent = status.busy ? t('running') : t('idle');
+    $('valIp').textContent = status.ip || '-';
+    $('valUp').textContent = status.uptime + 's';
+    $('netHint').textContent = 'ESPNETPAD / netpad12345 → http://192.168.4.1';
+    if (status.slot) $('otaSlot').textContent = t('slot') + ' ' + status.slot;
+
+    const configured = status.ssid && status.ssid !== '(unset)';
+    $('wifiSummary').textContent = configured ? (status.ssid + ' · ' + status.ip) : t('notConfigured');
+    $('curWifi').textContent = t('current') + ': ' + $('wifiSummary').textContent;
+
+    if (status.lang && status.lang !== lang) applyLang(status.lang);
+    if (status.region) $('region').value = status.region;
+
+    $('pollInfo').textContent = new Date().toLocaleTimeString();
+  }catch(e){
+    $('pollInfo').textContent = t('offline');
+  }
+}
+
+/* ---------------- wifi ---------------- */
+function bars(rssi){
+  const n = rssi >= -55 ? 4 : rssi >= -65 ? 3 : rssi >= -75 ? 2 : 1;
+  let h = '';
+  for (let i = 0; i < 4; i++) h += '<i class="' + (i < n ? 'on' : '') + '" style="height:' + (4 + i * 3) + 'px"></i>';
+  return '<span class="bars">' + h + '</span>';
+}
+
+async function scan(){
+  const btn = $('btnScan');
+  btn.disabled = true; btn.textContent = t('scanning');
+  try{
+    const r = await fetch('/wifi/scan');
+    const j = await r.json();
+    wifiNets = j.nets || [];
+    const box = $('wifiList');
+    if (!wifiNets.length){
+      box.innerHTML = '<div class="wifi-item"><span class="wifi-name muted">' + t('noNetworks') + '</span></div>';
+    }else{
+      box.innerHTML = wifiNets.map((n, i) =>
+        '<div class="wifi-item" data-i="' + i + '">' + bars(n.rssi) +
+        '<span class="wifi-name">' + n.ssid.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</span>' +
+        '<span class="lock">' + (n.auth ? '🔒' : '') + '</span></div>').join('');
+      box.querySelectorAll('.wifi-item').forEach(el => {
+        el.onclick = () => {
+          box.querySelectorAll('.wifi-item').forEach(x => x.classList.remove('sel'));
+          el.classList.add('sel');
+          $('ssid').value = wifiNets[+el.dataset.i].ssid;
+          $('pass').focus();
+        };
+      });
+    }
+    appendLog(t('scanDone') + wifiNets.length + t('networks'));
+  }catch(e){
+    appendLog('scan: ' + e);
+  }finally{
+    btn.disabled = false; btn.textContent = t('scan');
+  }
+}
+
+$('btnSave').onclick = async () => {
+  const ssid = $('ssid').value.trim();
+  if (!ssid){ $('wifiMsg').className = 'msg err'; $('wifiMsg').textContent = t('needSsid'); return; }
+  $('wifiMsg').className = 'msg';
+  $('wifiMsg').textContent = t('saved');
+  await cmd('WIFI ' + ssid + ' ' + $('pass').value);
+};
+
+/* ---------------- pad ---------------- */
+document.querySelectorAll('[data-btn]').forEach(el => {
+  el.onclick = async () => {
+    const b = el.dataset.btn;
+    const hold = Math.max(20, Math.min(2000, parseInt($('hold').value || '80', 10)));
+    $('lastBtn').textContent = b;
+    el.classList.add('hit');
+    setTimeout(() => el.classList.remove('hit'), hold);
+    await cmd('PRESS ' + b + ' ' + hold + ' 1');
+  };
+});
+
+/* ---------------- macro / type ---------------- */
+$('btnBootstrap').onclick = () => cmd('BOOTSTRAP ' + $('region').value);
+$('btnStop').onclick = () => cmd('STOP');
+$('region').onchange = () => cmd('SET REGION ' + $('region').value);
+
+function textPayload(){
+  return $('text').value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n');
+}
+$('btnType').onclick = () => cmd('TYPE 0 ' + textPayload());
+$('btnTypeEnter').onclick = () => cmd('TYPE 1 ' + textPayload());
+$('btnClear').onclick = () => { log.textContent = t('logReady'); log.dataset.placeholder = '1'; };
+
+/* ---------------- ota ---------------- */
+$('btnOta').onclick = () => {
+  const f = $('fw').files[0];
+  if (!f){ $('otaMsg').className = 'msg err'; $('otaMsg').textContent = t('chooseBin'); return; }
+  $('otaMsg').className = 'msg';
+  $('otaMsg').textContent = t('uploading') + ' 0%';
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/ota');
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) $('otaMsg').textContent = t('uploading') + ' ' + Math.round(e.loaded / e.total * 100) + '%';
+  };
+  xhr.onload = () => { $('otaMsg').textContent = xhr.responseText || 'OK'; appendLog(xhr.responseText); };
+  xhr.onerror = () => { $('otaMsg').className = 'msg err'; $('otaMsg').textContent = t('uploadFail'); };
+  xhr.send(f);
+};
+
+/* ---------------- language ---------------- */
+$('btnLang').onclick = async () => {
+  const next = lang === 'zh' ? 'en' : 'zh';
+  applyLang(next);
+  await cmd('SET LANG ' + next);
+};
+
+/* ---------------- boot ---------------- */
+$('btnScan').onclick = scan;
+applyLang('en');
+poll().then(() => {
+  const configured = status.ssid && status.ssid !== '(unset)';
+  if (!configured){
+    $('wifiBox').open = true;     /* first boot / AP mode: open and scan */
+    scan();
+  }else{
+    $('wifiBox').open = false;    /* already joined: keep it collapsed */
+  }
+});
+setInterval(poll, 2000);
+</script>
+</body>
+</html>

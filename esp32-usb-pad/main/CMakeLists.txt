@@ -7,19 +7,22 @@ set(PAYLOAD_FILE "${ESP32PAD_DIR}/../PicoSwitch/payload.txt"
 set(MACRO_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/macro_script.h")
 
 idf_component_register(
-  SRCS "main.c"
+  EMBED_TXTFILES "web/index.html"
+  SRCS "main.c" "hid_pad.c" "net_api.c"
   INCLUDE_DIRS "." "${CMAKE_CURRENT_BINARY_DIR}"
-  REQUIRES esp_tinyusb freertos esp_timer
+  REQUIRES esp_tinyusb freertos esp_timer esp_wifi esp_netif esp_event
+           esp_http_server nvs_flash lwip app_update
 )
 
-set(LANG_JP 1 CACHE STRING "Enable JP IME Alt+Space before each line")
-set(MACRO_REPEAT 1 CACHE STRING "Repeat the macro forever")
+# Standalone mode (no network): run the macro by itself after USB enumeration.
+set(MACRO_REPEAT 0 CACHE STRING "Repeat the macro forever at boot")
 set(MACRO_REPEAT_DELAY_MS 5000 CACHE STRING "Delay between macro rounds")
+set(NETPAD_SKIP_USB 0 CACHE STRING "Skip tinyusb init (debug console builds)")
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
-  LANG_JP=${LANG_JP}
   MACRO_REPEAT=${MACRO_REPEAT}
   MACRO_REPEAT_DELAY_MS=${MACRO_REPEAT_DELAY_MS}
+  NETPAD_SKIP_USB=${NETPAD_SKIP_USB}
 )
 
 # add_custom_command is not scriptable, and the component library target does

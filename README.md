@@ -65,31 +65,28 @@ Three components:
 
 ## Japanese consoles (JP-only Switch 2)
 
-**Only needed on a JP console.** On an English console skip this entirely and
-build with `LANG_JP=0` (the only difference between the two builds is this flag).
+**Only needed on a JP console.** On an English console the extra keystrokes are
+skipped at runtime — no separate build.
 
 On a JP console the chat input stays in Japanese IME mode, so plain ASCII
 keystrokes open the candidate window and the payload arrives as kana — the XSS
-never runs. `esp32-usb-pad` has a build flag that handles this; `PicoSwitch` has
-no IME toggle and needs the console in English input mode.
+never runs. `esp32-usb-pad` handles this at runtime; `PicoSwitch` has no IME
+toggle and needs the console in English input mode.
 
 | Build | JP handling |
 |---|---|
 | `PicoSwitch` | none — relies on the console's language/keyboard language being English |
-| `esp32-usb-pad` | `Alt+Space` per line, `-DLANG_JP=1` (default is 1) |
+| `esp32-usb-pad` | `Alt+Space` per line; pick **JP-only / International** in the web UI (`BOOTSTRAP jp` / `BOOTSTRAP intl`), saved in NVS |
 
 `Alt+Space` toggles the IME to direct (English) input, so each line is typed as
 literal ASCII. It is emitted **per line**, not once, because every payload line
 is a fresh chat message: `Esc`, `A`, `Alt+Space`, type line, `Enter`, `Enter`.
 
-Build for the two cases:
+Choose the region in the macro card of `http://<board-ip>/`, or from a shell:
 
 ```sh
-# JP console (repo default is LANG_JP=1)
-idf.py -DLANG_JP=1 build
-
-# English console: no IME toggle, 232 ms (~20 s per run) faster
-idf.py -DLANG_JP=0 build
+python3 esp32-usb-pad/tools/netpad.py --host 10.2.0.240 macro   # uses saved region
+printf 'SET REGION intl\n' | nc 10.2.0.240 9060                 # English console
 ```
 
 Notes:
@@ -152,3 +149,22 @@ See `esp32-usb-pad/README.md` for wiring, timing, and troubleshooting.
 - The JS exploit core in `core.js` referenced [inject.js](https://github.com/NetflixNHack/Netflix-N-Hack/blob/main/inject.js) from [Netflix-N-Hack](https://github.com/NetflixNHack/Netflix-N-Hack) and its fork by [ufm42](https://github.com/ufm42/Netflix-N-Hack/blob/main/inject.js) 
 - The PicoSwitch firmware is based on [Pico-Switch-Controller](https://github.com/Element2424/Pico-Switch-Controller) by [Element2424](https://github.com/Element2424)
 
+
+## fs payloads (Civ7 live loader)
+
+* `payloads/fs_read.js` — listens on TCP 9027 and streams one arbitrary
+  `mount:/path` file to the PC. Drive it with:
+
+  ```sh
+  python3 tools/fsget.py save:/saves/UserOptions.txt /tmp/u.txt
+  ```
+
+  The console must be in-game with the Remote JS Loader on :9026. The PC
+  connects in; the console never dials out.
+
+* `payloads/fs_probe.js` — reusable raw-CMIF probe for the fsp-srv
+  save-data commands (`0x33/0x34/0x35/0x40`). It borrows the live SDK
+  session by reading `.data` only (no SDK calls that can mutate state).
+
+Note: `save:/` is the game's own save; system saves and other titles' saves
+return `0x00320002 PermissionDenied` (cmd `0x40` included).

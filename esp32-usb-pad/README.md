@@ -1,23 +1,27 @@
-# esp32-usb-pad — ESP32-S3 replacement for PicoSwitch
+# esp32-usb-pad — ESP32-S3 USB HID pad for CivSwitch
 
-USB composite HID device (gamepad + boot-protocol keyboard) that types the
-CivSwitch chat-XSS payload into the Switch 2, exactly like `PicoSwitch` does on
-a Raspberry Pi Pico. Same descriptors, same `payload.txt`, same workflow — just
-a different MCU.
+USB composite HID device (**gamepad + boot-protocol keyboard**) that types the
+CivSwitch chat-XSS payload into the Switch 2, plus a **Wi-Fi control surface** so
+you can drive it from a browser or a script instead of re-flashing macros.
+
+Same descriptors and same `payload.txt` as `PicoSwitch`, just a different MCU.
+
+```
+ESP32-S3 native USB  ──►  Switch 2 dock / USB-C adapter
+        (composite HID: gamepad + keyboard)
+
+   PC / phone ── Wi-Fi ──► HTTP :80  (web UI, JSON API, OTA)
+                      └──► TCP  :9060 (line commands)
+```
 
 Why it exists:
 
 - **No Pico required.** ESP32-S3 boards are cheap and everywhere.
 - **Gamepad A is real.** CH9329-style adapters only emulate a keyboard/mouse;
-  the game needs a controller to open the in-game chat, so a pure keyboard
-  adapter cannot run the payload.
-- **One USB cable.** Interface 0 is the gamepad, interface 1 is the keyboard;
-  both are presented by the board's single native USB port.
-
-```
-ESP32-S3 native USB  ──►  Switch 2 dock / USB-C adapter
-        (composite HID: gamepad + keyboard)
-```
+  the game needs a controller to open the in-game chat.
+- **One USB cable.** Interface 0 is the gamepad, interface 1 is the keyboard.
+- **No re-flash loop.** Buttons, typing and the macro are triggered over Wi-Fi;
+  firmware updates are OTA.
 
 ## Requirements
 
@@ -25,6 +29,7 @@ ESP32-S3 native USB  ──►  Switch 2 dock / USB-C adapter
 |---|---|
 | MCU | ESP32-S3 (needs native USB-OTG; ESP32 classic is **not** supported) |
 | Toolchain | ESP-IDF **v6.1** |
+| Flash | 16 MB board assumed (4 MB app slots); see `partitions.csv` |
 | Board | any ESP32-S3 devkit with the native USB port exposed |
 
 The firmware uses `esp_tinyusb` (managed component, fetched automatically).
@@ -49,22 +54,10 @@ npm install          # once
 node compress.js     # writes PicoSwitch/payload.txt from ../core.js
 ```
 
-The build embeds it into `macro_script.h` automatically:
+The build embeds it into `macro_script.h` automatically. Each payload line is
+`Esc`, `A`, optional `Alt+Space` (JP IME), the line, `Enter`, `Enter`.
 
-```
--- Generating macro_script.h from payload.txt
-87 batches, ... lines -> .../esp32-usb-pad/build/esp32-usb-pad/macro_script.h
-```
-
-Output:
-
-```text
-build/esp32-usb-pad.bin
-build/bootloader/bootloader.bin
-build/partition_table/partition-table.bin
-```
-
-## Flash
+## Flash (first time / recovery)
 
 Put the board into download mode **before** it enumerates:
 
@@ -72,71 +65,146 @@ Put the board into download mode **before** it enumerates:
 2. Plug the board's **native USB port** (not the UART/CH340 port) into the PC.
 3. Release **BOOT**.
 
-Then:
-
 ```sh
 idf.py -p /dev/cu.usbmodemXXXX flash
 ```
 
-Hold-BOOT-while-plugging is the verified sequence on this board.  If you skip the BOOT hold, the firmware
-boots normally and immediately starts typing the macro into the PC (the macro
-runs as soon as USB enumerates, on any host), and `idf.py` will not see a port.
-
-If no `/dev/cu.usbmodemXXXX` appears, try another USB cable or port, or check board documentation; the chip is only visible to `idf.py` while in download mode.
-
-For a single-file image (same download mode):
+`idf.py flash` skips regions that already match. After changing the partition
+table or flash size, force a full write once:
 
 ```sh
-esptool --chip esp32s3 -p /dev/cu.usbmodemXXXX -b 460800 \
-  write-flash 0x0 build/esp32-usb-pad_flashed.bin
+python -m esptool --chip esp32s3 -p /dev/cu.usbmodemXXXX -b 460800 \
+  --before default-reset --after hard-reset write-flash \
+  --flash-mode dio --flash-freq 80m --flash-size 16MB \
+  0x0 build/bootloader/bootloader.bin \
+  0x8000 build/partition_table/partition-table.bin \
+  0x10000 build/esp32-usb-pad.bin
 ```
 
-After flashing, unplug the board from the PC and connect it to the console —
-it will boot straight into the macro.
+**Press RESET after flashing.** `esptool`'s reset can leave the chip in ROM
+download mode (`boot:0x21 (DOWNLOAD)`) — a physical reset boots the app.
 
-## Usage
+## OTA (normal updates)
 
-1. If your console allows it: **System Settings → System → Language** =
-   English (US). A JP-only console cannot change this: build with
-   `-DLANG_JP=1` (auto-toggles the JP IME), then continue with step 2.
-2. **System Settings → Controllers and Accessories → USB Keyboard** =
-   English (US). 
-3. Plug the board into the console.
-4. Start Civilization 7, load any save, open the in-game chat.
-5. The macro starts ~2 s after USB enumeration:
-   - 5 × **A** to focus the chat input;
-   - for each of the 87 payload lines: `Esc`, `A`, optional `Alt+Space`
-     (JP IME), type the line, `Enter`, `Enter`;
-   - repeat every 5 s until the Remote JS Loader is up on port 9026.
+Two 4 MB app slots (`ota_0` / `ota_1`); an upload goes to the inactive slot.
 
-Then use `send_js.py` / `installer-creator` from the repo root as usual.
+```sh
+python3 tools/ota.py 10.2.0.240 build/esp32-usb-pad.bin
+```
 
-Unplug the board once the loader is running — otherwise the next round types
-into the game again.
+The web UI has the same thing under **Firmware update (OTA)** with a progress
+bar. `/status` reports the booted slot. Rollback is enabled: the app calls
+`esp_ota_mark_app_valid_cancel_rollback()` at the end of `app_main`, so an image
+that panics before that is reverted on the next reset.
+
+No USB cable or BOOT button needed for normal iterations.
+
+## Wi-Fi
+
+First boot (no saved credentials) starts a setup AP:
+
+```text
+SSID:     ESPNETPAD
+Password: netpad12345
+URL:      http://192.168.4.1
+```
+
+Join it from a phone, open the page, pick a network from the scan list, enter the
+password, **Save & reboot**. The board joins the LAN and keeps the setup AP as a
+recovery path, so `http://192.168.4.1` keeps working.
+
+The Wi-Fi card on the page is collapsed when the board is already connected, and
+opens + scans automatically when it is unconfigured.
+
+ESP32-S3 is **2.4 GHz only**.
+
+## Web UI
+
+`http://<board-ip>/` — status pills, collapsible Wi-Fi, full pad (shoulders,
+d-pad, ABXY, minus/plus/home/capture/L3/R3) with adjustable hold time, the Civ7
+macro card, a text box, OTA, and a log pane.
+
+English by default; the **中文 / EN** button switches and the choice is stored in
+NVS.
+
+## HTTP API
+
+| method | path | notes |
+|---|---|---|
+| GET  | `/`           | control page (embedded `main/web/index.html`) |
+| GET  | `/status`     | JSON status |
+| GET  | `/wifi/scan`  | nearby 2.4 GHz APs |
+| POST | `/ota`        | firmware `.bin`, then reboot |
+| POST | `/cmd`        | one or more command lines |
+
+```sh
+curl -s http://10.2.0.240/status
+curl -s -X POST --data 'PRESS a 80 1' http://10.2.0.240/cmd
+curl -s -X POST --data 'TYPE 1 hello world' http://10.2.0.240/cmd
+```
+
+`/status`:
+
+```json
+{"mounted":true,"busy":false,"ip":"10.2.0.240","ap":"192.168.4.1",
+ "ssid":"R-SH02","uptime":42,"slot":"ota_0","lang":"en","region":"jp"}
+```
+
+## TCP API
+
+Port **9060**, one command per line, reply ends with `END`. Text needs no URL
+encoding, so it is easier to drive from scripts:
+
+```sh
+printf 'PRESS home 80 1\n' | nc 10.2.0.240 9060
+```
+
+## Commands
+
+| command | description |
+|---|---|
+| `STATUS` | `mounted=… busy=… ip=… slot=… lang=… region=…` |
+| `STOP` | stop the running macro after the current step |
+| `BOOTSTRAP [jp\|intl]` | run the Civ7 macro; the region is saved |
+| `SET REGION jp\|intl` | console region for the macro (persisted) |
+| `SET LANG en\|zh` | web UI language (persisted) |
+| `PRESS <btns> [hold_ms] [count]` | press buttons, default 60 ms × 1 |
+| `TYPE <enter 0\|1> <text>` | type printable ASCII, `\n` = Enter |
+| `WIFI <ssid> <pass>` | save credentials and reboot |
+| `REBOOT` | reboot |
+| `HELP` | command list |
+
+`<btns>` is `+`-separated, e.g. `a+up`, `l+r`, `home`.
+
+Button names: `a b x y l r zl zr minus plus l3 r3 home capture`
+Directions: `up down left right` (combined into a hat/diagonal).
+
+## Console region (JP IME)
+
+A JP-only console keeps the chat input in Japanese IME mode, so raw ASCII opens
+the candidate window and the payload arrives as kana. The macro therefore emits
+`Alt+Space` (toggle to direct input) **before every line**.
+
+That step is a runtime decision now, not a build flag:
+
+- **JP-only console** (default) — `Alt+Space` is sent per line;
+- **International console** — those steps are skipped (~20 s faster per run).
+
+Pick it in the macro card's dropdown or `BOOTSTRAP intl`. The choice is stored in
+NVS. The payload itself is identical for both; only the IME toggle differs.
 
 ## Flags
 
-All are CMake cache values, so they can be set per build without editing code:
-
 | Flag | Default | Meaning |
 |---|---:|---|
-| `LANG_JP` | `1` | **JP consoles only.** Emit `Alt+Space` before every payload line (toggle the Japanese IME to direct English input). Set `0` on an English-locale console — it saves 232 ms per line (~20 s per run) and is the only difference between the two builds. |
-| `MACRO_REPEAT` | `1` | Repeat the whole macro forever. `0` = run once. |
+| `MACRO_REPEAT` | `0` | Repeat the macro forever at boot (standalone use, no network). |
 | `MACRO_REPEAT_DELAY_MS` | `5000` | Delay between rounds when repeating. |
 | `PAYLOAD_FILE` | `../PicoSwitch/payload.txt` | Payload to embed. |
-
-Example — English console, single run:
+| `NETPAD_SKIP_USB` | `0` | Skip TinyUSB (debug console build). |
 
 ```sh
-idf.py -DLANG_JP=0 -DMACRO_REPEAT=0 build
+idf.py -DMACRO_REPEAT=1 build      # standalone, runs the macro at boot
 ```
-
-The `LANG_JP` default is `1` because the hardware this was written on is a
-JP-only console, which cannot be switched to English. Everyone else should
-build with `-DLANG_JP=0`.
-
-`idf.py` keeps these in `build/`, so pass them again (or use
-`idf.py menuconfig` → *Component config* is not used here) after `fullclean`.
 
 ## How it maps to PicoSwitch
 
@@ -147,35 +215,43 @@ build with `-DLANG_JP=0`.
 | HID layout | gamepad + keyboard | same descriptors, copied from `PicoSwitch/include/SwitchConsts.h` |
 | Payload source | `PicoSwitch/payload.txt` | same file |
 | Macro generator | `tools/payload_to_macro.py` | `tools/payload_to_esp32.py` |
-| Timing | `payload_to_macro.py` constants | `payload_to_esp32.py` constants |
+| Trigger | repeats at boot | Wi-Fi API / web UI / OTA |
 | VID/PID | `0x0f0d:0x0092` | same |
 
-The USB descriptors are byte-for-byte copies, so the console sees the same
-device class from either board. USB report layout:
+USB report layout:
 
 - gamepad: 8 bytes (`buttons` lo/hi, hat, LX, LY, RX, RY, vendor)
 - keyboard: 8-byte boot report (modifier, reserved, 6 keycodes)
 
+## Tools
+
+| Script | Purpose |
+|---|---|
+| `tools/netpad.py` | send commands (`press`, `type`, `macro`, `status`) |
+| `tools/ota.py` | upload firmware over Wi-Fi |
+| `tools/serial_log.py` | append the USB-Serial/JTAG console to a file |
+| `tools/payload_to_esp32.py` | `payload.txt` → `macro_script.h` |
+
 ## Tested
 
-- ESP32-S3 devkit, ESP-IDF v6.1, composite descriptor builds and enumerates.
-- Full 87-line payload typed successfully into Civ7 on Switch 2 (JP 20.4.0),
-  Remote JS Loader came up on `:9026`.
-- 5 s repeat confirmed working; unplugging the board stops further rounds.
+- ESP32-S3, ESP-IDF v6.1, composite descriptor enumerates on Switch 2.
+- Full 87-line payload typed into Civ7 (JP 20.4.0), Remote JS Loader on `:9026`.
+- D-pad left/right (HAT `0x02` / `0x06`) verified on Switch 2 hardware.
+- OTA `ota_0` ↔ `ota_1` verified over Wi-Fi.
 
 ## Troubleshooting
 
 | Symptom | Cause |
 |---|---|
-| Payload types as garbage / IME candidates | console IME is not English; check `LANG_JP` and the USB keyboard language setting |
-| Chat never opens | the 5 × A preamble missed the window; check the game is past the main menu and the chat button is focused |
+| Types as garbage / IME candidates | console is JP-only but region is `intl` (no `Alt+Space`) |
+| Chat never opens | the 5 × A preamble missed the window; check the game is past the main menu |
 | Nothing happens at all | board enumerated as UART only — use the native USB port |
-| Board not detected | hold BOOT, tap RESET, release BOOT |
+| Board not detected for flashing | hold BOOT, tap RESET, release BOOT |
+| Chip stays in `DOWNLOAD(USB/UART0)` after flashing | press RESET (esptool reset cannot clear the strap) |
+| OTA upload times out | AP+STA share the radio; just retry (`tools/ota.py` retries once) |
 
 ## Notes
 
-- Not a Bluetooth controller: this is USB only. Use `PicoSwitch` if you need
-  the wireless path.
-- No rumble, motion or NFC; only the buttons/sticks used by the macro.
-- CH9329 and other keyboard-only adapters **cannot** run this payload: the game
-  needs a real gamepad `A` press to open the chat.
+- Not a Bluetooth controller: this is USB only. Use `PicoSwitch` for wireless.
+- No rumble, motion or NFC; only the buttons/sticks needed by the macro.
+- CH9329 and other keyboard-only adapters **cannot** run this payload.

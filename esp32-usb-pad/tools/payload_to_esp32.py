@@ -84,11 +84,9 @@ def main():
         out.append(f"    WAIT({ESC_TO_A_WAIT_MS}),")
         out.append(f"    PAD_BTN({A_PRESS_MS}, SWITCH_USB_MASK_A),")
         out.append(f"    WAIT({POST_A_WAIT_MS}),")
-        out.append("#if LANG_JP")
-        out.append("    // JP IME: switch to English input before this line")
-        out.append("    KEYS(32, KEYBOARD_MODIFIER_LEFTALT, HID_KEY_SPACE, 0, 0, 0, 0, 0),")
-        out.append("    WAIT(200),")
-        out.append("#endif")
+        # Runtime-selectable: the firmware skips this step on international
+        # consoles (see MACRO_OP_IME in hid_pad.c).
+        out.append("    IME_TOGGLE(200),")
         keys = [ASCII_TO_KEY[c] for c in line]
         prev = None
         for shift, key_name in keys:
