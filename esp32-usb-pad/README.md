@@ -57,6 +57,41 @@ node compress.js     # writes PicoSwitch/payload.txt from ../core.js
 The build embeds it into `macro_script.h` automatically. Each payload line is
 `Esc`, `A`, optional `Alt+Space` (JP IME), the line, `Enter`, `Enter`.
 
+## Prebuilt firmware
+
+`firmware/` holds a snapshot built from the current `PicoSwitch/payload.txt`:
+
+| File | Use |
+|---|---|
+| `esp32-usb-pad-full.bin` | full image (bootloader + partition table + app) — flash at `0x0` over USB |
+| `esp32-usb-pad-ota.bin` | app only — OTA (`tools/ota.py`) or write at `0x10000` |
+
+Full USB flash, no toolchain needed:
+
+```sh
+python -m esptool --chip esp32s3 -p /dev/cu.usbmodemXXXX -b 460800 \
+  --before default-reset --after hard-reset write-flash \
+  --flash-mode dio --flash-freq 80m --flash-size 16MB \
+  0x0 firmware/esp32-usb-pad-full.bin
+```
+
+Then press **RESET** on the board.
+
+Use the prebuilt image when you just want the current macro. **If you change
+`payload.txt` (or `core.js`, which generates it), the payload must be rebuilt
+into the firmware** — it is compiled in, not read at runtime:
+
+```sh
+cd PicoSwitch && node compress.js
+cd ../esp32-usb-pad && idf.py build
+```
+
+Then flash over USB as above, or update a running board over Wi-Fi:
+
+```sh
+python3 tools/ota.py <board-ip> build/esp32-usb-pad.bin
+```
+
 ## Flash (first time / recovery)
 
 Put the board into download mode **before** it enumerates:
@@ -120,9 +155,17 @@ ESP32-S3 is **2.4 GHz only**.
 
 ## Web UI
 
-`http://<board-ip>/` — status pills, collapsible Wi-Fi, full pad (shoulders,
-d-pad, ABXY, minus/plus/home/capture/L3/R3) with adjustable hold time, the Civ7
-macro card, a text box, OTA, and a log pane.
+`http://<board-ip>/` — first row is **status + Wi-Fi**, the **virtual pad takes a
+full row** (shoulders, d-pad, ABXY, minus/plus/home/capture/L3/R3, adjustable
+hold time), then the Civ7 macro card, a text box, OTA, and a log pane.
+
+The Wi-Fi card always shows the connected SSID, IP and signal strength
+(`rssi`); **Change** expands the scan list and credential form. It opens and
+scans by itself only when the board has no saved network.
+
+**BOOT button:** hold it for **2 seconds** while the board is running to launch
+the macro immediately in **international** mode, without opening this page. The
+saved region setting is not changed.
 
 English by default; the **中文 / EN** button switches and the choice is stored in
 NVS.
@@ -147,7 +190,7 @@ curl -s -X POST --data 'TYPE 1 hello world' http://10.2.0.240/cmd
 
 ```json
 {"mounted":true,"busy":false,"ip":"10.2.0.240","ap":"192.168.4.1",
- "ssid":"R-SH02","uptime":42,"slot":"ota_0","lang":"en","region":"jp"}
+ "ssid":"R-SH02","rssi":-49,"uptime":42,"slot":"ota_0","lang":"en","region":"jp"}
 ```
 
 ## TCP API
@@ -163,7 +206,7 @@ printf 'PRESS home 80 1\n' | nc 10.2.0.240 9060
 
 | command | description |
 |---|---|
-| `STATUS` | `mounted=… busy=… ip=… slot=… lang=… region=…` |
+| `STATUS` | `mounted=… busy=… ip=… rssi=… slot=… lang=… region=…` |
 | `STOP` | stop the running macro after the current step |
 | `BOOTSTRAP [jp\|intl]` | run the Civ7 macro; the region is saved |
 | `SET REGION jp\|intl` | console region for the macro (persisted) |
@@ -238,6 +281,8 @@ USB report layout:
 - Full 87-line payload typed into Civ7 (JP 20.4.0), Remote JS Loader on `:9026`.
 - D-pad left/right (HAT `0x02` / `0x06`) verified on Switch 2 hardware.
 - OTA `ota_0` ↔ `ota_1` verified over Wi-Fi.
+- BOOT hold 2 s (GPIO0) launches the macro in international mode.
+- Wi-Fi signal display (`rssi`) from `/status`.
 
 ## Troubleshooting
 

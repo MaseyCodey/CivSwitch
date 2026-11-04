@@ -13,7 +13,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:linear-gradient(180deg,#0a0f1c,#0b1020 40%);color:var(--text);
   font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}
-.wrap{max-width:980px;margin:0 auto;padding:18px 16px 40px}
+.wrap{max-width:1040px;margin:0 auto;padding:18px 16px 40px}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
 .hdr-right{display:flex;align-items:center;gap:8px}
@@ -54,6 +54,12 @@ pre{background:#080d18;border:1px solid var(--border);border-radius:10px;padding
   margin:8px 0 0;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;
   color:#c7d6ee;max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-all}
 .muted{color:var(--muted);font-size:11.5px}
+code{background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12px}
+/* wifi */
+.wifi-now{display:flex;align-items:center;gap:10px;background:var(--panel2);
+  border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.wifi-now b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wifi-now .grow{flex:1;min-width:0}
 .wifi-list{margin-top:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;
   max-height:210px;overflow-y:auto;background:var(--panel2)}
 .wifi-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;
@@ -62,35 +68,29 @@ pre{background:#080d18;border:1px solid var(--border);border-radius:10px;padding
 .wifi-item:hover{background:#16223a}
 .wifi-item.sel{background:rgba(59,130,246,.14);box-shadow:inset 2px 0 0 var(--accent)}
 .wifi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
-.bars{display:flex;align-items:flex-end;gap:2px;height:13px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:16px}
 .bars i{width:3px;background:#3b4a66;border-radius:1px}
 .bars i.on{background:var(--accent2)}
+.bars.big i{width:4px}
 .lock{font-size:11px;color:var(--muted);width:14px;text-align:center}
-details.wifi{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:0}
-details.wifi>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;
-  align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:#cfe0ff}
-details.wifi>summary::-webkit-details-marker{display:none}
-details.wifi>summary::after{content:"▾";color:var(--muted);transition:.15s}
-details.wifi[open]>summary::after{transform:rotate(180deg)}
-details.wifi .body{padding:0 16px 16px}
-.pad{display:grid;gap:12px;margin-top:4px}
-.pad-top{display:flex;justify-content:center;gap:8px}
-.bumper{min-width:62px;padding:8px 0;font-weight:600;font-size:12px}
-.cross{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:5px}
+/* pad */
+.pad{display:grid;gap:14px;margin-top:6px}
+.pad-top{display:flex;justify-content:center;gap:10px}
+.bumper{min-width:84px;padding:10px 0;font-weight:600;font-size:13px}
+.pad-mid{display:flex;align-items:center;justify-content:space-evenly;gap:24px;flex-wrap:wrap}
+.cross{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:6px}
 .cross .g{display:flex;align-items:center;justify-content:center;border:1px solid var(--border);
-  background:var(--panel2);border-radius:10px;cursor:pointer;font-weight:600;user-select:none;font-size:14px}
+  background:var(--panel2);border-radius:11px;cursor:pointer;font-weight:600;user-select:none;font-size:15px}
 .cross .g:hover{background:#16223a;border-color:#33507e}
 .cross .g:active,.cross .g.hit{background:var(--accent);border-color:var(--accent);color:#fff}
 .cross .sp{background:transparent;border:0;cursor:default}
-.pad-mid{display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap}
-.center-btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-width:220px}
-.center-btns button{font-size:12px;padding:6px 8px}
-.seq{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.center-btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:230px}
+.center-btns button{font-size:12px;padding:8px}
+.seq{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .seq input{width:110px}
 .hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6}
 .msg{min-height:16px;font-size:12px;color:var(--accent2)}
 .msg.err{color:#fca5a5}
-code{background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12px}
 </style>
 </head>
 <body>
@@ -116,65 +116,75 @@ code{background:var(--panel2);border:1px solid var(--border);border-radius:5px;p
     </div>
 
     <div class="card">
-      <h2><span data-i18n="pad">Virtual pad</span><small data-i18n="padHint">default hold 80 ms</small></h2>
-      <div class="seq">
-        <span class="muted" data-i18n="hold">Hold</span>
-        <input id="hold" type="number" min="20" max="2000" step="10" value="80">
-        <span class="muted">ms</span>
-        <span class="muted" style="margin-left:auto"><i data-i18n="lastPress">Last</i>: <code id="lastBtn">-</code></span>
+      <h2>
+        <span data-i18n="wifi">Wi-Fi</span>
+        <button class="ghost" id="btnWifiCfg" style="font-size:11.5px;padding:4px 10px" data-i18n="change">Change</button>
+      </h2>
+      <div class="wifi-now">
+        <span id="wifiBars"></span>
+        <span class="grow"><b id="wifiSsid">--</b><br><span class="muted" id="wifiMeta"></span></span>
+        <span class="muted" id="wifiRssi"></span>
       </div>
-      <div class="pad">
-        <div class="pad-top">
-          <button class="bumper" data-btn="zl">ZL</button>
-          <button class="bumper" data-btn="l">L</button>
-          <button class="bumper" data-btn="r">R</button>
-          <button class="bumper" data-btn="zr">ZR</button>
+      <div class="hint" style="margin-top:0" id="apHint"></div>
+
+      <div id="wifiBody" hidden>
+        <div class="row" style="justify-content:space-between;margin-top:10px">
+          <span class="muted" data-i18n="nearby">Nearby networks</span>
+          <button class="ghost" id="btnScan" style="font-size:11.5px;padding:4px 10px" data-i18n="scan">Scan</button>
         </div>
-        <div class="pad-mid">
-          <div class="cross">
-            <div class="sp"></div><div class="g" data-btn="up">▲</div><div class="sp"></div>
-            <div class="g" data-btn="left">◀</div><div class="sp"></div><div class="g" data-btn="right">▶</div>
-            <div class="sp"></div><div class="g" data-btn="down">▼</div><div class="sp"></div>
-          </div>
-          <div class="center-btns">
-            <button data-btn="minus">－ Minus</button>
-            <button data-btn="plus">＋ Plus</button>
-            <button data-btn="home">🏠 HOME</button>
-            <button data-btn="capture">📷 Capture</button>
-            <button data-btn="l3">L3</button>
-            <button data-btn="r3">R3</button>
-          </div>
-          <div class="cross">
-            <div class="sp"></div><div class="g" data-btn="x">X</div><div class="sp"></div>
-            <div class="g" data-btn="y">Y</div><div class="sp"></div><div class="g" data-btn="a">A</div>
-            <div class="sp"></div><div class="g" data-btn="b">B</div><div class="sp"></div>
-          </div>
+        <div class="wifi-list" id="wifiList"><div class="wifi-item"><span class="wifi-name muted" data-i18n="scanHint">Tap “Scan”.</span></div></div>
+        <label data-i18n="ssid">SSID</label>
+        <input id="ssid" placeholder="2.4GHz Wi-Fi" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <label data-i18n="password">Password</label>
+        <input id="pass" type="password" autocomplete="off" placeholder="">
+        <div class="row" style="margin-top:10px">
+          <button class="primary" id="btnSave" data-i18n="saveReboot">Save &amp; reboot</button>
         </div>
+        <div class="hint" data-i18n="wifiNote">ESP32-S3 is 2.4 GHz only.</div>
+        <div class="msg" id="wifiMsg"></div>
       </div>
     </div>
   </div>
 
-  <details class="wifi" id="wifiBox" style="margin-top:14px">
-    <summary>
-      <span><i data-i18n="wifi">Wi-Fi</i> · <span id="wifiSummary">--</span></span>
-    </summary>
-    <div class="body">
-      <div class="row" style="justify-content:space-between">
-        <span class="muted" id="curWifi">--</span>
-        <button class="ghost" id="btnScan" style="font-size:11.5px;padding:4px 10px" data-i18n="scan">Scan</button>
+  <div class="card" style="margin-top:14px">
+    <h2>
+      <span data-i18n="pad">Virtual pad</span>
+      <span class="row" style="gap:8px">
+        <span class="muted" data-i18n="hold">Hold</span>
+        <input id="hold" type="number" min="20" max="2000" step="10" value="80" style="width:90px">
+        <span class="muted">ms</span>
+        <span class="muted"><i data-i18n="lastPress">Last</i>: <code id="lastBtn">-</code></span>
+      </span>
+    </h2>
+    <div class="pad">
+      <div class="pad-top">
+        <button class="bumper" data-btn="zl">ZL</button>
+        <button class="bumper" data-btn="l">L</button>
+        <button class="bumper" data-btn="r">R</button>
+        <button class="bumper" data-btn="zr">ZR</button>
       </div>
-      <div class="wifi-list" id="wifiList"><div class="wifi-item"><span class="wifi-name muted" data-i18n="scanHint">Tap “Scan”.</span></div></div>
-      <label data-i18n="ssid">SSID</label>
-      <input id="ssid" placeholder="2.4GHz Wi-Fi" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <label data-i18n="password">Password</label>
-      <input id="pass" type="password" autocomplete="off" placeholder="">
-      <div class="row" style="margin-top:10px">
-        <button class="primary" id="btnSave" data-i18n="saveReboot">Save &amp; reboot</button>
+      <div class="pad-mid">
+        <div class="cross">
+          <div class="sp"></div><div class="g" data-btn="up">▲</div><div class="sp"></div>
+          <div class="g" data-btn="left">◀</div><div class="sp"></div><div class="g" data-btn="right">▶</div>
+          <div class="sp"></div><div class="g" data-btn="down">▼</div><div class="sp"></div>
+        </div>
+        <div class="center-btns">
+          <button data-btn="minus">－ Minus</button>
+          <button data-btn="plus">＋ Plus</button>
+          <button data-btn="home">🏠 HOME</button>
+          <button data-btn="capture">📷 Capture</button>
+          <button data-btn="l3">L3</button>
+          <button data-btn="r3">R3</button>
+        </div>
+        <div class="cross">
+          <div class="sp"></div><div class="g" data-btn="x">X</div><div class="sp"></div>
+          <div class="g" data-btn="y">Y</div><div class="sp"></div><div class="g" data-btn="a">A</div>
+          <div class="sp"></div><div class="g" data-btn="b">B</div><div class="sp"></div>
+        </div>
       </div>
-      <div class="hint" data-i18n="wifiNote">ESP32-S3 is 2.4 GHz only. The setup AP ESPNETPAD (192.168.4.1) stays available as a recovery path.</div>
-      <div class="msg" id="wifiMsg"></div>
     </div>
-  </details>
+  </div>
 
   <div class="grid grid-2" style="margin-top:14px">
     <div class="card">
@@ -190,6 +200,7 @@ code{background:var(--panel2);border:1px solid var(--border);border-radius:5px;p
         <button id="btnStop" data-i18n="stop">⏹ Stop</button>
       </div>
       <div class="hint" data-i18n="macroHint">The macro only runs when the console has enumerated the device (USB = ready).</div>
+      <div class="hint" data-i18n="bootNote">Hold the BOOT button for 2 seconds to run the macro in international mode without touching this page.</div>
     </div>
 
     <div class="card">
@@ -226,53 +237,62 @@ const log = $('log');
 let wifiNets = [];
 let lang = 'en';
 let status = {};
+let wifiBodyOpen = false;
 
 const STR = {
   en: {
     badge: 'USB HID · Wi-Fi control',
     status: 'Status', usb: 'USB', action: 'Action', lanIp: 'LAN IP', uptime: 'Uptime',
     ready: 'ready', notConnected: 'not connected', idle: 'idle', running: 'running',
-    pad: 'Virtual pad', padHint: 'default hold 80 ms', hold: 'Hold', lastPress: 'Last',
-    wifi: 'Wi-Fi', scan: 'Scan', scanHint: 'Tap “Scan”.', ssid: 'SSID', password: 'Password',
-    saveReboot: 'Save & reboot', wifiNote: 'ESP32-S3 is 2.4 GHz only. The setup AP ESPNETPAD (192.168.4.1) stays available as a recovery path.',
-    current: 'Current', notConfigured: 'not configured (AP mode)', scanning: 'Scanning…', noNetworks: 'No networks found',
+    wifi: 'Wi-Fi', change: 'Change', hide: 'Hide', nearby: 'Nearby networks',
+    scan: 'Scan', scanHint: 'Tap “Scan”.', ssid: 'SSID', password: 'Password',
+    saveReboot: 'Save & reboot', wifiNote: 'ESP32-S3 is 2.4 GHz only.',
+    apHint: 'Setup AP: ESPNETPAD / netpad12345 → http://192.168.4.1 (recovery path)',
+    current: 'Current', notConfigured: 'not configured (AP mode)', scanning: 'Scanning…',
+    noNetworks: 'No networks found', noSignal: 'no signal',
+    pad: 'Virtual pad', hold: 'Hold', lastPress: 'Last',
     macro: 'Macro', macroTag: 'Civ7 chat-XSS payload',
     macroNote: 'This is the payload this project currently uses for Civilization VII (87 lines typed into the in-game chat). JP-only consoles need Alt+Space (IME toggle) before every line; international consoles do not.',
     region: 'Console region',
     regionJp: 'JP-only console (Alt+Space IME)', regionIntl: 'International console',
     runMacro: '▶ Run macro', stop: '⏹ Stop',
     macroHint: 'The macro only runs when the console has enumerated the device (USB = ready).',
+    bootNote: 'Hold the BOOT button for 2 seconds to run the macro in international mode without touching this page.',
     type: 'Type text', typeTag: 'US layout', typeBtn: 'TYPE', typeEnterBtn: 'TYPE + ENTER',
     typeNote: 'Printable ASCII only; use \\n for a newline.',
     ota: 'Firmware update (OTA)', otaUpload: 'Upload & reboot',
     otaNote: 'Pick build/esp32-usb-pad.bin. It is written to the inactive OTA slot; a bad image rolls back automatically.',
     log: 'Log', clear: 'Clear', logReady: 'Ready.', chooseBin: 'Choose a .bin file first',
     uploading: 'Uploading', uploadFail: 'Upload failed', saved: 'Saved, rebooting…',
-    needSsid: 'Pick or type an SSID first', lastPrefix: 'last', slot: 'slot',
-    scanDone: 'Scan done: ', networks: ' networks', offline: 'offline', msgSaved: 'Saved, rebooting…'
+    needSsid: 'Pick or type an SSID first', slot: 'slot',
+    scanDone: 'Scan done: ', networks: ' networks', offline: 'offline'
   },
   zh: {
     badge: 'USB HID · Wi-Fi 控制',
     status: '状态', usb: 'USB', action: '动作', lanIp: '局域网 IP', uptime: '运行时间',
     ready: '已枚举', notConnected: '未连接', idle: '空闲', running: '执行中',
-    pad: '虚拟手柄', padHint: '默认按住 80ms', hold: '按住', lastPress: '当前',
-    wifi: 'Wi-Fi 配置', scan: '扫描附近网络', scanHint: '点“扫描附近网络”。', ssid: 'SSID', password: '密码',
-    saveReboot: '保存并重启', wifiNote: 'ESP32-S3 只支持 2.4GHz。热点 ESPNETPAD（192.168.4.1）会一直保留作为恢复通道。',
-    current: '当前', notConfigured: '未配置（AP 模式）', scanning: '扫描中…', noNetworks: '没有扫描到网络',
+    wifi: 'Wi-Fi', change: '修改', hide: '收起', nearby: '附近网络',
+    scan: '扫描附近网络', scanHint: '点“扫描附近网络”。', ssid: 'SSID', password: '密码',
+    saveReboot: '保存并重启', wifiNote: 'ESP32-S3 只支持 2.4GHz。',
+    apHint: '配网热点：ESPNETPAD / netpad12345 → http://192.168.4.1（恢复通道）',
+    current: '当前', notConfigured: '未配置（AP 模式）', scanning: '扫描中…',
+    noNetworks: '没有扫描到网络', noSignal: '无信号',
+    pad: '虚拟手柄', hold: '按住', lastPress: '当前',
     macro: '宏', macroTag: '《文明7》聊天 XSS payload',
     macroNote: '这是本项目当前用于《文明7》的 payload（87 行，输入到游戏内聊天框）。日版专用机每行前需要 Alt+Space 切换输入法，国际版机器不需要。',
     region: '机器版本',
     regionJp: '日版专用机（Alt+Space 切输入法）', regionIntl: '国际版机器',
     runMacro: '▶ 执行宏', stop: '⏹ 停止',
     macroHint: '只有主机已枚举设备（USB = 已枚举）时宏才会执行。',
+    bootNote: '长按板子上的 BOOT 键 2 秒，可直接以国际版模式执行宏，不用打开本页面。',
     type: '打字', typeTag: 'US 布局', typeBtn: 'TYPE', typeEnterBtn: 'TYPE + ENTER',
     typeNote: '仅支持可打印 ASCII；换行用 \\n。',
     ota: '固件更新 (OTA)', otaUpload: '上传并重启',
     otaNote: '选择 build/esp32-usb-pad.bin。写入非活动 OTA 槽位，坏固件会自动回滚。',
     log: '日志', clear: '清空', logReady: '就绪。', chooseBin: '请先选择 .bin 文件',
     uploading: '上传中', uploadFail: '上传失败', saved: '已保存，板子重启中…',
-    needSsid: '请先选择或输入 SSID', lastPrefix: '当前', slot: '槽位',
-    scanDone: '扫描完成：', networks: ' 个网络', offline: '离线', msgSaved: '已保存，板子重启中…'
+    needSsid: '请先选择或输入 SSID', slot: '槽位',
+    scanDone: '扫描完成：', networks: ' 个网络', offline: '离线'
   }
 };
 const t = k => (STR[lang] && STR[lang][k]) || STR.en[k] || k;
@@ -285,13 +305,12 @@ function applyLang(l){
     if (STR[lang][key]) el.textContent = STR[lang][key];
   });
   $('btnLang').textContent = lang === 'zh' ? 'EN' : '中文';
+  $('btnWifiCfg').textContent = wifiBodyOpen ? t('hide') : t('change');
   $('text').placeholder = lang === 'zh' ? '要输入的文本' : 'Text to type';
   $('pass').placeholder = lang === 'zh' ? 'Wi-Fi 密码' : 'Wi-Fi password';
   $('ssid').placeholder = lang === 'zh' ? '2.4GHz Wi-Fi 名称' : '2.4GHz Wi-Fi name';
-  if (!log.textContent.trim() || log.dataset.placeholder === '1') {
-    log.dataset.placeholder = '1';
-    log.textContent = t('logReady');
-  }
+  if (log.dataset.placeholder === '1') log.textContent = t('logReady');
+  renderWifiNow();
 }
 
 function appendLog(txt){
@@ -309,6 +328,23 @@ async function cmd(line){
   return txt;
 }
 
+function bars(rssi, big){
+  const n = rssi >= -55 ? 4 : rssi >= -65 ? 3 : rssi >= -75 ? 2 : 1;
+  let h = '';
+  for (let i = 0; i < 4; i++) h += '<i class="' + (i < n ? 'on' : '') + '" style="height:' + (big ? 5 + i * 4 : 4 + i * 3) + 'px"></i>';
+  return '<span class="bars' + (big ? ' big' : '') + '">' + h + '</span>';
+}
+
+function renderWifiNow(){
+  if (!status || status.ssid === undefined) return;
+  const configured = status.ssid && status.ssid !== '(unset)';
+  $('wifiBars').innerHTML = configured ? bars(status.rssi, true) : '';
+  $('wifiSsid').textContent = configured ? status.ssid : t('notConfigured');
+  $('wifiMeta').textContent = configured ? ('IP ' + status.ip + ' · ' + t('slot') + ' ' + (status.slot || '-')) : ('http://192.168.4.1');
+  $('wifiRssi').textContent = configured && status.rssi > -127 ? (status.rssi + ' dBm') : '';
+  $('apHint').textContent = t('apHint');
+}
+
 /* ---------------- status ---------------- */
 async function poll(){
   try{
@@ -323,13 +359,10 @@ async function poll(){
     $('netHint').textContent = 'ESPNETPAD / netpad12345 → http://192.168.4.1';
     if (status.slot) $('otaSlot').textContent = t('slot') + ' ' + status.slot;
 
-    const configured = status.ssid && status.ssid !== '(unset)';
-    $('wifiSummary').textContent = configured ? (status.ssid + ' · ' + status.ip) : t('notConfigured');
-    $('curWifi').textContent = t('current') + ': ' + $('wifiSummary').textContent;
-
     if (status.lang && status.lang !== lang) applyLang(status.lang);
     if (status.region) $('region').value = status.region;
 
+    renderWifiNow();
     $('pollInfo').textContent = new Date().toLocaleTimeString();
   }catch(e){
     $('pollInfo').textContent = t('offline');
@@ -337,13 +370,6 @@ async function poll(){
 }
 
 /* ---------------- wifi ---------------- */
-function bars(rssi){
-  const n = rssi >= -55 ? 4 : rssi >= -65 ? 3 : rssi >= -75 ? 2 : 1;
-  let h = '';
-  for (let i = 0; i < 4; i++) h += '<i class="' + (i < n ? 'on' : '') + '" style="height:' + (4 + i * 3) + 'px"></i>';
-  return '<span class="bars">' + h + '</span>';
-}
-
 async function scan(){
   const btn = $('btnScan');
   btn.disabled = true; btn.textContent = t('scanning');
@@ -375,6 +401,13 @@ async function scan(){
     btn.disabled = false; btn.textContent = t('scan');
   }
 }
+
+function setWifiBody(open){
+  wifiBodyOpen = open;
+  $('wifiBody').hidden = !open;
+  $('btnWifiCfg').textContent = open ? t('hide') : t('change');
+}
+$('btnWifiCfg').onclick = () => setWifiBody(!wifiBodyOpen);
 
 $('btnSave').onclick = async () => {
   const ssid = $('ssid').value.trim();
@@ -437,10 +470,10 @@ applyLang('en');
 poll().then(() => {
   const configured = status.ssid && status.ssid !== '(unset)';
   if (!configured){
-    $('wifiBox').open = true;     /* first boot / AP mode: open and scan */
+    setWifiBody(true);      /* first boot / AP mode: open and scan */
     scan();
   }else{
-    $('wifiBox').open = false;    /* already joined: keep it collapsed */
+    setWifiBody(false);     /* already joined: keep it collapsed */
   }
 });
 setInterval(poll, 2000);

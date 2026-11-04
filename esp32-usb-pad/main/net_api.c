@@ -174,6 +174,12 @@ static void decode_escapes(char *s) {
 
 /* ------------------------------------------------------------- wifi config */
 
+static int sta_rssi(void) {
+    wifi_ap_record_t ap;
+    if (s_have_creds && esp_wifi_sta_get_ap_info(&ap) == ESP_OK) return ap.rssi;
+    return -127;
+}
+
 static void cfg_get_str(const char *key, char *out, size_t cap, const char *def) {
     out[0] = '\0';
     nvs_handle_t h;
@@ -255,9 +261,9 @@ static void exec_cmd(char *line, Sink *out) {
             "END\n");
     } else if (strcasecmp(cmd, "STATUS") == 0) {
         sink_printf(out,
-            "OK mounted=%d busy=%d ip=%s ap=192.168.4.1 ssid=%s uptime=%llds "
-            "slot=%s lang=%s region=%s\nEND\n",
-            hid_pad_mounted(), hid_pad_busy(), s_ip, s_ssid,
+            "OK mounted=%d busy=%d ip=%s ap=192.168.4.1 ssid=%s rssi=%d "
+            "uptime=%llds slot=%s lang=%s region=%s\nEND\n",
+            hid_pad_mounted(), hid_pad_busy(), s_ip, s_ssid, sta_rssi(),
             (long long)(esp_timer_get_time() / 1000000),
             esp_ota_get_running_partition()->label, s_lang, s_region);
     } else if (strcasecmp(cmd, "STOP") == 0) {
@@ -390,10 +396,11 @@ static esp_err_t status_get(httpd_req_t *req) {
     char buf[320];
     snprintf(buf, sizeof(buf),
              "{\"mounted\":%s,\"busy\":%s,\"ip\":\"%s\","
-             "\"ap\":\"192.168.4.1\",\"ssid\":\"%s\",\"uptime\":%lld,"
-             "\"slot\":\"%s\",\"lang\":\"%s\",\"region\":\"%s\"}",
+             "\"ap\":\"192.168.4.1\",\"ssid\":\"%s\",\"rssi\":%d,"
+             "\"uptime\":%lld,\"slot\":\"%s\",\"lang\":\"%s\","
+             "\"region\":\"%s\"}",
              hid_pad_mounted() ? "true" : "false",
-             hid_pad_busy() ? "true" : "false", s_ip, s_ssid,
+             hid_pad_busy() ? "true" : "false", s_ip, s_ssid, sta_rssi(),
              (long long)(esp_timer_get_time() / 1000000),
              esp_ota_get_running_partition()->label, s_lang, s_region);
     httpd_resp_set_type(req, "application/json");

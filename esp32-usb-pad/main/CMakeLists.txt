@@ -11,7 +11,7 @@ idf_component_register(
   SRCS "main.c" "hid_pad.c" "net_api.c"
   INCLUDE_DIRS "." "${CMAKE_CURRENT_BINARY_DIR}"
   REQUIRES esp_tinyusb freertos esp_timer esp_wifi esp_netif esp_event
-           esp_http_server nvs_flash lwip app_update
+           esp_http_server nvs_flash lwip app_update esp_driver_gpio
 )
 
 # Standalone mode (no network): run the macro by itself after USB enumeration.

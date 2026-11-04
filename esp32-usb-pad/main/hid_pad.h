@@ -28,6 +28,10 @@ bool hid_pad_region_jp(void);
 /* Queue one run of the compiled macro (macro_script.h). */
 void hid_pad_bootstrap(void);
 
+/* Same, with an explicit region for this run only (does not change the saved
+ * setting). jp=false -> international console, no Alt+Space IME steps. */
+void hid_pad_bootstrap_region(bool jp);
+
 /* Queue `count` presses of `buttons`, optionally with a hat direction. */
 void hid_pad_press(uint16_t buttons, uint8_t hat, uint16_t hold_ms, uint16_t count);
 

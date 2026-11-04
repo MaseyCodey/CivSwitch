@@ -7,6 +7,7 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
 #include "class/hid/hid_device.h"
 
 #include "usb_descriptors.h"
@@ -26,6 +27,14 @@ static const char *TAG = "hidpad";
 #define PAD_AUTO_DELAY_MS 5000
 #endif
 
+/* BOOT button: hold 2 s to run the Civ7 macro in international mode. */
+#ifndef BOOT_BUTTON_GPIO
+#define BOOT_BUTTON_GPIO 0
+#endif
+#ifndef BOOT_BUTTON_HOLD_MS
+#define BOOT_BUTTON_HOLD_MS 2000
+#endif
+
 #define PAD_TYPE_HOLD_MS 30
 #define PAD_TYPE_GAP_MS 30
 
@@ -37,6 +46,7 @@ typedef enum {
 
 typedef struct {
     JobKind kind;
+    bool region_jp;
     uint16_t buttons;
     uint8_t hat;
     uint16_t hold_ms;
@@ -103,7 +113,7 @@ static void run_key_times(const MacroStep *step) {
     }
 }
 
-static void run_bootstrap(void) {
+static void run_bootstrap(bool region_jp) {
     ESP_LOGI(TAG, "bootstrap start");
     hid_pad_neutral();
     for (size_t i = 0; i < sizeof(MACRO_SCRIPT) / sizeof(MACRO_SCRIPT[0]); i++) {
@@ -128,7 +138,7 @@ static void run_bootstrap(void) {
                 run_key_times(step);
                 break;
             case MACRO_OP_IME:
-                if (!s_region_jp) {
+                if (!region_jp) {
                     /* International console: no IME, skip the step + its wait. */
                     continue;
                 }
@@ -254,7 +264,7 @@ static void action_task(void *arg) {
         s_busy = true;
         switch (job.kind) {
             case JOB_BOOTSTRAP:
-                run_bootstrap();
+                run_bootstrap(job.region_jp);
                 break;
             case JOB_PRESS:
                 run_press(job.buttons, job.hat, job.hold_ms,
@@ -285,7 +295,12 @@ static bool enqueue_job(PadJob *job) {
 }
 
 void hid_pad_bootstrap(void) {
-    PadJob j = {.kind = JOB_BOOTSTRAP};
+    PadJob j = {.kind = JOB_BOOTSTRAP, .region_jp = s_region_jp};
+    enqueue_job(&j);
+}
+
+void hid_pad_bootstrap_region(bool jp) {
+    PadJob j = {.kind = JOB_BOOTSTRAP, .region_jp = jp};
     enqueue_job(&j);
 }
 
@@ -309,10 +324,41 @@ void hid_pad_type(const char *text, uint16_t hold_ms, bool enter) {
     if (!enqueue_job(&j)) free(j.text);
 }
 
+static void boot_button_task(void *arg) {
+    (void)arg;
+    gpio_config_t io = {
+        .pin_bit_mask = 1ULL << BOOT_BUTTON_GPIO,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ONLY,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&io);
+
+    int held_ms = 0;
+    bool fired = false;
+    for (;;) {
+        if (gpio_get_level(BOOT_BUTTON_GPIO) == 0) {
+            held_ms += 50;
+            if (!fired && held_ms >= BOOT_BUTTON_HOLD_MS) {
+                fired = true;
+                ESP_LOGI(TAG, "BOOT held %d ms -> macro (international)",
+                         BOOT_BUTTON_HOLD_MS);
+                hid_pad_bootstrap_region(false);
+            }
+        } else {
+            held_ms = 0;
+            fired = false;
+        }
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+}
+
 void hid_pad_init(void) {
     s_queue = xQueueCreate(8, sizeof(PadJob));
     configASSERT(s_queue);
     xTaskCreate(action_task, "hidpad", 8192, NULL, 5, NULL);
+    xTaskCreate(boot_button_task, "bootbtn", 3072, NULL, 3, NULL);
 
 #if PAD_AUTO_MACRO
     while (!s_mounted) vTaskDelay(pdMS_TO_TICKS(200));
