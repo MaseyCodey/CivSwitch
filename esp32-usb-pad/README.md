@@ -155,6 +155,8 @@ ESP32-S3 is **2.4 GHz only**.
 
 ## Web UI
 
+![Web UI](docs/ui.jpg)
+
 `http://<board-ip>/` — first row is **status + Wi-Fi**, the **virtual pad takes a
 full row** (shoulders, d-pad, ABXY, minus/plus/home/capture/L3/R3, adjustable
 hold time), then the Civ7 macro card, a text box, OTA, and a log pane.

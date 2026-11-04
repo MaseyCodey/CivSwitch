@@ -18,6 +18,15 @@ Three components:
 - **esp32-usb-pad** — the same USB HID macro for **ESP32-S3** instead of a Pico (composite gamepad + keyboard, same descriptors, same `payload.txt`). Builds with ESP-IDF; see `esp32-usb-pad/README.md`.
 - **installer-creator** — given any JavaScript payload, produces the boot-persistent installer (`XSTRIG.Civ7Save` trigger written to savedata) to send through the Remote JS Loader.
 
+### esp32-usb-pad web UI
+
+![esp32-usb-pad web UI](esp32-usb-pad/docs/ui.jpg)
+
+The ESP32-S3 firmware exposes a Wi-Fi control surface: status, connected Wi-Fi
+and signal, the full virtual pad, the Civ7 macro (JP-only / international),
+typing, and OTA updates. See
+[`esp32-usb-pad/README.md`](esp32-usb-pad/README.md).
+
 ## Layout
 
 `core.js` at the root is the shared payload both components build from, and `send_js.py` at the root sends any payload to a running loader.
