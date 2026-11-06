@@ -17,6 +17,7 @@ Three components:
   Ships with `compress.js` (chat transport: terser -> deflateRaw -> base-25 chunked `img/onerror` lines with censor armor).
 - **esp32-usb-pad** — the same USB HID macro for **ESP32-S3** instead of a Pico (composite gamepad + keyboard, same descriptors, same `payload.txt`). Builds with ESP-IDF; see `esp32-usb-pad/README.md`.
 - **installer-creator** — given any JavaScript payload, produces the boot-persistent installer (`XSTRIG.Civ7Save` trigger written to savedata) to send through the Remote JS Loader.
+- **esp32-ldn** — fully offline alternative: an ESP32-S3 joins the game's **local wireless** lobby and delivers the payload plus the persistent installer over LDN. No Wi-Fi/LAN, no USB HID typing, no language or layout changes; only your own `prod.keys` is needed. Recommended when the console cannot stay online (e.g. heavy DNS blocking). See `esp32-ldn/README.md`.
 
 ### esp32-usb-pad web UI
 
