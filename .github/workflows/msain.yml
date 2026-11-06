@@ -1,0 +1,47 @@
+name: Build CivSwitch ESP32-S3 Firmware
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 nodejs npm
+
+      - name: Compress Payload
+        run: |
+          cd PicoSwitch
+          npm install
+          node compress.js
+
+      - name: Set up ESP-IDF
+        run: |
+          mkdir -p ~/esp
+          cd ~/esp
+          wget https://github.com
+          unzip esp-idf-v5.1.2.zip
+          mv esp-idf-v5.1.2 esp-idf
+          cd esp-idf
+          ./install.sh esp32s3
+
+      - name: Build Firmware
+        run: |
+          . ~/esp/esp-idf/export.sh
+          cd esp32-ldn-civ7
+          idf.py set-target esp32s3
+          idf.py build
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: civswitch-esp32s3-firmware
+          path: esp32-ldn-civ7/build/esp32-ldn-civ7.bin
