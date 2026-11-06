@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-click build (and optional flash) for esp32-ldn.
+"""One-click build (and optional flash) for esp32-ldn-civ7.
 
   python3 tools/build_and_flash.py --keys prod.keys --port /dev/cu.usbmodemXXXX --flash
 
@@ -81,7 +81,7 @@ def main() -> int:
                    "--flash-size", "16MB",
                    "0x0", os.path.join(BUILD, "bootloader", "bootloader.bin"),
                    "0x8000", os.path.join(BUILD, "partition_table", "partition-table.bin"),
-                   hex(APP_OFF), os.path.join(BUILD, "esp32-ldn.bin"),
+                   hex(APP_OFF), os.path.join(BUILD, "esp32-ldn-civ7.bin"),
                    hex(TPL_OFF), os.path.join(BLOBS, "blob_tpl.bin"),
                    hex(APPLY_OFF), os.path.join(BLOBS, "blob_apply.bin")])
     print("flashed. Press RESET on the board, then create the wireless lobby.")

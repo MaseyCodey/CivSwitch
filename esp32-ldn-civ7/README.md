@@ -1,4 +1,4 @@
-# esp32-ldn — offline CivSwitch installer over Local Wireless (LDN)
+# esp32-ldn-civ7 — offline CivSwitch installer over Local Wireless (LDN)
 
 ![Console screen after a successful run](Screenshot_1.jpg)
 
@@ -18,7 +18,7 @@ is the right choice for future titles.
 
 This firmware is **Civ VII specific** and is the recommended path today:
 
-| | `esp32-usb-pad` (net-pad) | `esp32-ldn` (this) |
+| | `esp32-usb-pad` (net-pad) | `esp32-ldn-civ7` (this) |
 |---|---|---|
 | Transport | USB HID typing | Civ VII wireless lobby (LDN) |
 | Console setup | English/USB keyboard language, layout changes | none |
@@ -50,7 +50,7 @@ gitignored together with the payloads and blobs.
 ## One-click build + flash
 
 ```sh
-cd CivSwitch/esp32-ldn
+cd CivSwitch/esp32-ldn-civ7
 source /path/to/esp-idf/export.sh          # idf.py on PATH
 python3 tools/build_and_flash.py \
     --keys /path/to/prod.keys \
@@ -84,12 +84,14 @@ in ROM download mode).
 4. The console shows (see the screenshot):
 
 ```text
+esp32-ldn-civ7 by sean
 CivSwitch 1.0 by Gezine
 UDP PAYLOAD CHANNEL :9027
 UDP header tpl=1406 js=36
 RUNNING INSTALLER (...)
 INSTALL DONE - reboot, Load Game
 INSTALLER RETURNED
+leaving ldn network.
 switching to TCP loader :9026
 Awaiting payload at 10.2.0.186:9026
 ```
@@ -122,7 +124,7 @@ scan LDN advertisements (channels 1/6/11)
 ## Layout
 
 ```text
-esp32-ldn/
+esp32-ldn-civ7/
   CMakeLists.txt
   partitions.csv           app 1 MB + 2 MB storage for the installer blobs
   sdkconfig.defaults

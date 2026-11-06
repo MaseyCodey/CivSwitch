@@ -11,14 +11,14 @@ node_modules/
 __pycache__/
 *.pyc
 
-# esp32-ldn: secrets and generated payloads
-esp32-ldn/prod.keys
-esp32-ldn/main/keys.h
-esp32-ldn/main/chat_payload.h
-esp32-ldn/blobs/
-esp32-ldn/build/
-esp32-ldn/sdkconfig
-esp32-ldn/sdkconfig.old
-esp32-ldn/managed_components/
-esp32-ldn/dependencies.lock
+# esp32-ldn-civ7: secrets and generated payloads
+esp32-ldn-civ7/prod.keys
+esp32-ldn-civ7/main/keys.h
+esp32-ldn-civ7/main/chat_payload.h
+esp32-ldn-civ7/blobs/
+esp32-ldn-civ7/build/
+esp32-ldn-civ7/sdkconfig
+esp32-ldn-civ7/sdkconfig.old
+esp32-ldn-civ7/managed_components/
+esp32-ldn-civ7/dependencies.lock
 prod.keys

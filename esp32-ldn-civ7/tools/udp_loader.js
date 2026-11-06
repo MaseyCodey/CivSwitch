@@ -89,6 +89,7 @@
                         await log("RUNNING INSTALLER (" + src.length + " bytes)");
                         try { await eval(src); } catch (e) { await log("E: " + e.message); await log(e.stack); }
                         await log("INSTALLER RETURNED");
+                        await log("leaving ldn network.");
                         await log("switching to TCP loader :9026");
                         await remote_js_loader();
                     }

@@ -14,7 +14,7 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)                 # CivSwitch/esp32-ldn
+ROOT = os.path.dirname(HERE)                 # CivSwitch/esp32-ldn-civ7
 CIV = os.path.dirname(ROOT)                  # CivSwitch
 DEFAULT_CORE = os.path.join(CIV, "core.js")
 SNIPPET = os.path.join(HERE, "udp_loader.js")
@@ -47,6 +47,9 @@ def main() -> int:
         return 1
     snippet = open(SNIPPET, encoding="utf-8").read()
     combined = core.replace(ENTRY, snippet)
+    combined = combined.replace(
+        'await log("CivSwitch 1.0 by Gezine");',
+        'await log("esp32-ldn-civ7 by sean");\n        await log("CivSwitch 1.0 by Gezine");')
 
     tmp = tempfile.mkdtemp(prefix="civ7payload_")
     try:

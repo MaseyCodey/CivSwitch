@@ -17,7 +17,7 @@ Three components:
   Ships with `compress.js` (chat transport: terser -> deflateRaw -> base-25 chunked `img/onerror` lines with censor armor).
 - **esp32-usb-pad** — the same USB HID macro for **ESP32-S3** instead of a Pico (composite gamepad + keyboard, same descriptors, same `payload.txt`). Builds with ESP-IDF; see `esp32-usb-pad/README.md`.
 - **installer-creator** — given any JavaScript payload, produces the boot-persistent installer (`XSTRIG.Civ7Save` trigger written to savedata) to send through the Remote JS Loader.
-- **esp32-ldn** — fully offline alternative: an ESP32-S3 joins the game's **local wireless** lobby and delivers the payload plus the persistent installer over LDN. No Wi-Fi/LAN, no USB HID typing, no language or layout changes; only your own `prod.keys` is needed. Recommended when the console cannot stay online (e.g. heavy DNS blocking). See `esp32-ldn/README.md`.
+- **esp32-ldn-civ7** — fully offline alternative: an ESP32-S3 joins the game's **local wireless** lobby and delivers the payload plus the persistent installer over LDN. No Wi-Fi/LAN, no USB HID typing, no language or layout changes; only your own `prod.keys` is needed. Recommended when the console cannot stay online (e.g. heavy DNS blocking). See `esp32-ldn-civ7/README.md`.
 
 ### esp32-usb-pad web UI
 
@@ -158,23 +158,7 @@ See `esp32-usb-pad/README.md` for wiring, timing, and troubleshooting.
   PicoSwitch firmware and installer.
 - The JS exploit core in `core.js` referenced [inject.js](https://github.com/NetflixNHack/Netflix-N-Hack/blob/main/inject.js) from [Netflix-N-Hack](https://github.com/NetflixNHack/Netflix-N-Hack) and its fork by [ufm42](https://github.com/ufm42/Netflix-N-Hack/blob/main/inject.js) 
 - The PicoSwitch firmware is based on [Pico-Switch-Controller](https://github.com/Element2424/Pico-Switch-Controller) by [Element2424](https://github.com/Element2424)
-
-
-## fs payloads (Civ7 live loader)
-
-* `payloads/fs_read.js` — listens on TCP 9027 and streams one arbitrary
-  `mount:/path` file to the PC. Drive it with:
-
-  ```sh
-  python3 tools/fsget.py save:/saves/UserOptions.txt /tmp/u.txt
-  ```
-
-  The console must be in-game with the Remote JS Loader on :9026. The PC
-  connects in; the console never dials out.
-
-* `payloads/fs_probe.js` — reusable raw-CMIF probe for the fsp-srv
-  save-data commands (`0x33/0x34/0x35/0x40`). It borrows the live SDK
-  session by reading `.data` only (no SDK calls that can mutate state).
-
-Note: `save:/` is the game's own save; system saves and other titles' saves
-return `0x00320002 PermissionDenied` (cmd `0x40` included).
+- `esp32-ldn-civ7` ports the local-wireless path from
+  [CivSwitchLDN](https://github.com/ItsNerisma/CivSwitchLDN) (GPL-3.0) and the
+  ESP32 LDN radio technique from [pokeldn](https://github.com/Decryptu/pokeldn)
+  (AGPL-3.0).
