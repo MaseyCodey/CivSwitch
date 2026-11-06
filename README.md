@@ -21,7 +21,7 @@ Three components:
 
 ### esp32-ldn-civ7
 
-**if you have an esp32-s3 board, goto [esp32-ldn-civ7](esp32-ldn-civ7/README.md)** to flash firmware and install immediately.
+**if you have an esp32-s3 board, goto [esp32-ldn-civ7](esp32-ldn-civ7/README.md)** to flash firmware and install now. the rest of this page is for other methods.
 
 
 ### esp32-usb-pad web UI

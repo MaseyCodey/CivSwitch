@@ -41,7 +41,7 @@ the local-wireless link.
 | Toolchain | ESP-IDF **v6.1** |
 | Host tools | Node.js (for `terser`), Python 3.10+ |
 | Console | Switch 2, Civ VII **1.0.0 physical cartridge** (Switch 1 edition) |
-| Keys | your own `prod.keys`, dumped from your own console |
+| Keys | your own `prod.keys`, dumped from your Switch 1|
 | Game state | `MULTIPLAYER → WIRELESS → CREATE GAME → HOST LOBBY` |
 
 `prod.keys` is **never committed** — `keys.h` is generated at build time and is
@@ -51,7 +51,7 @@ gitignored together with the payloads and blobs.
 
 ```sh
 cd CivSwitch/esp32-ldn-civ7
-source /path/to/esp-idf/export.sh          # idf.py on PATH
+source /path/to/esp-idf/export.sh      # idf.py on PATH
 python3 tools/build_and_flash.py \
     --keys /path/to/prod.keys \
     --port /dev/cu.usbmodem1234 \
