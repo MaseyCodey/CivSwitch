@@ -312,10 +312,14 @@ static esp_err_t ethernet_rx(void *buffer, uint16_t length, void *eb) {
                     const uint8_t *udp = ip + ihl;
                     uint16_t dport = (udp[2] << 8) | udp[3];
                     uint16_t sport = (udp[0] << 8) | udp[1];
-                    ESP_LOGI(TAG, "udp rx %u->%u len=%u", sport, dport,
-                             length - 14 - ihl - 8);
+                    if (dport != 9027) {
+                        ESP_LOGI(TAG, "udp rx %u->%u len=%u", sport, dport,
+                                 length - 14 - ihl - 8);
+                    }
                     if (dport == 62056) {
                         civ7_rx_udp(udp + 8, length - 14 - ihl - 8);
+                    } else if (dport == 9027) {
+                        installer_udp_rx(udp + 8, length - 14 - ihl - 8);
                     }
                 }
             }

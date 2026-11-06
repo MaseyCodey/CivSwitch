@@ -108,6 +108,10 @@ int civ7_udp_send(uint16_t port, const uint8_t *data, size_t len) {
     return udp_send_port(port, data, len);
 }
 
+void civ7_get_local_ip(uint8_t out[4]) {
+    memcpy(out, s_local_ip, 4);
+}
+
 /* ------------------------------------------------------------- transport */
 
 static void store(uint64_t seq, const uint8_t *pkt, size_t len) {

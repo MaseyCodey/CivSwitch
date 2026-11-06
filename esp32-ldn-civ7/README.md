@@ -25,7 +25,7 @@ This firmware is **Civ VII specific** and is the recommended path today:
 | PC required | for the web UI / installer upload | **no** |
 | Network required | Wi-Fi (console + board) | **none** (LDN only) |
 | Secrets | — | your own `prod.keys` (derived keys baked at build time) |
-| Speed | ~7 minutes of typing | ~20 seconds |
+| Speed | ~7 minutes of typing | ~10-15 seconds |
 | Works for other games | yes (autotyping) | no (Civ VII only) |
 
 The LDN path matters when the console cannot reach the internet: a heavily
@@ -87,19 +87,21 @@ in ROM download mode).
 esp32-ldn-civ7 by sean
 CivSwitch 1.0 by Gezine
 UDP PAYLOAD CHANNEL :9027
-UDP header tpl=1406 js=36
+UDP header tpl=1406 js=36 (nak)
+UDP header tpl=1406 js=36 (nak)
+UDP header tpl=1406 js=36 (nak)
 RUNNING INSTALLER (...)
 INSTALL DONE - reboot, Load Game
 INSTALLER RETURNED
 leaving ldn network.
 switching to TCP loader :9026
-Awaiting payload at 10.2.0.186:9026
+Awaiting payload at <console-ip>:9026
 ```
 
 5. From here either:
    - keep using the loader (`python3 send_js.py <ip> 9026 payload.js`), or
    - restart the game and pick **Load Game** → the persistent `XSTRIG.Civ7Save`
-     startsthe loader again.
+     starts the loader again.
 
 Each run needs a **fresh game**: the payload replaces the game's UI
 (`document.body.innerHTML=''`), so the lobby cannot be reused.
@@ -117,7 +119,9 @@ scan LDN advertisements (channels 1/6/11)
   → ARP warmup, FireCONN → NetWelcome
   → 20 chat messages (core.js + UDP receiver), 0.2 s apart
   → console evals the payload and binds UDP :9027
-  → board streams the installer (template + apply JS) over LDN
+  → board streams the installer (template + apply JS) over LDN in one pass
+  → console NAKs only the missing chunks; the board resends just those
+  → console starts the installer as soon as the last chunk arrives
   → console writes XSTRIG.Civ7Save, commits, then switches to the TCP loader :9026
 ```
 

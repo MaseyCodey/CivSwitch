@@ -19,6 +19,11 @@ Three components:
 - **installer-creator** — given any JavaScript payload, produces the boot-persistent installer (`XSTRIG.Civ7Save` trigger written to savedata) to send through the Remote JS Loader.
 - **esp32-ldn-civ7** — fully offline alternative: an ESP32-S3 joins the game's **local wireless** lobby and delivers the payload plus the persistent installer over LDN. No Wi-Fi/LAN, no USB HID typing, no language or layout changes; only your own `prod.keys` is needed. Recommended when the console cannot stay online (e.g. heavy DNS blocking). See `esp32-ldn-civ7/README.md`.
 
+### esp32-ldn-civ7
+
+**if you have an esp32-s3 board, goto [esp32-ldn-civ7](esp32-ldn-civ7/README.md)** to flash firmware and install immediately.
+
+
 ### esp32-usb-pad web UI
 
 ![esp32-usb-pad web UI](esp32-usb-pad/docs/ui.jpg)

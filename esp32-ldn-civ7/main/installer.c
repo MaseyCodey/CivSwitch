@@ -10,9 +10,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_netif.h"
@@ -154,72 +156,105 @@ static uint32_t blob_len(uint32_t off) {
 /* --------------------------------------------------------------- install */
 
 /* Fully offline: stream the installer over the LDN link to the UDP receiver
- * that core_udp.js binds on :9027.  Datagrams: A<tpl>:<js>, T<i>:<b64>,
- * J<i>:<b64>, G. */
+ * that core_udp.js binds on :9027.
+ *
+ * Board -> console: A<tpl>:<js>:<board ip>, T<i>:<b64>, J<i>:<b64>, G
+ * Console -> board: D (all received), t<i>/j<i> (resend that chunk)
+ *
+ * One fast pass plus a NAK repair window: the console starts the installer as
+ * soon as the last chunk lands instead of waiting for blind retransmissions. */
 #define UDP_CHUNK 1100
 #define UDP_PORT 9027
+
+static uint32_t s_tpl_len, s_js_len;
+static int s_need_t, s_need_j;
+static QueueHandle_t s_req_q;
+static volatile bool s_done;
+
+static void send_chunk(bool js, int i) {
+    if (js ? (i < 0 || i >= s_need_j) : (i < 0 || i >= s_need_t)) return;
+    uint32_t base = js ? APPLY_OFF : TPL_OFF;
+    uint32_t total = js ? s_js_len : s_tpl_len;
+    uint32_t off = base + 4 + (uint32_t)i * UDP_CHUNK;
+    size_t len = total - (uint32_t)i * UDP_CHUNK;
+    if (len > UDP_CHUNK) len = UDP_CHUNK;
+
+    static uint8_t buf[16 + UDP_CHUNK];
+    int pfx = snprintf((char *)buf, 16, js ? "J%d:" : "T%d:", i);
+    if (esp_partition_read(s_part, off, buf + pfx, len) != ESP_OK) return;
+    int r = -1;
+    for (int k = 0; k < 20 && r != 0; k++) {
+        r = civ7_udp_send(UDP_PORT, buf, pfx + len);
+        if (r != 0) vTaskDelay(pdMS_TO_TICKS(1));
+    }
+}
+
+/* Called from the Wi-Fi rx callback for UDP datagrams sent to :9027. */
+void installer_udp_rx(const uint8_t *data, size_t len) {
+    if (len == 1 && data[0] == 'D') { s_done = true; return; }
+    if (len < 2 || (data[0] != 't' && data[0] != 'j')) return;
+    char tmp[12];
+    size_t n = len - 1;
+    if (n > sizeof(tmp) - 1) n = sizeof(tmp) - 1;
+    memcpy(tmp, data + 1, n);
+    tmp[n] = 0;
+    int idx = atoi(tmp);
+    if (idx < 0 || !s_req_q) return;
+    uint32_t v = ((data[0] == 'j') ? (1u << 16) : 0u) | ((uint32_t)idx & 0xffff);
+    xQueueSend(s_req_q, &v, 0);
+}
 
 void installer_udp_run(void) {
     s_part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
     if (!s_part) { ESP_LOGE(TAG, "no storage partition"); return; }
-    uint32_t tpl_len = blob_len(TPL_OFF);
-    uint32_t js_len = blob_len(APPLY_OFF);
-    ESP_LOGI(TAG, "UDP installer: tpl %u, js %u", tpl_len, js_len);
-    if (!tpl_len || !js_len) { ESP_LOGE(TAG, "blobs missing"); return; }
+    s_tpl_len = blob_len(TPL_OFF);
+    s_js_len = blob_len(APPLY_OFF);
+    ESP_LOGI(TAG, "UDP installer: tpl %u, js %u", s_tpl_len, s_js_len);
+    if (!s_tpl_len || !s_js_len) { ESP_LOGE(TAG, "blobs missing"); return; }
 
     vTaskDelay(pdMS_TO_TICKS(800));   /* let the chat payload start the receiver */
 
-    int needT = (tpl_len + UDP_CHUNK - 1) / UDP_CHUNK;
-    int needJ = (js_len + UDP_CHUNK - 1) / UDP_CHUNK;
-    char hdr[48];
-    int hl = snprintf(hdr, sizeof(hdr), "A%d:%d", needT, needJ);
-    for (int k = 0; k < 6; k++) {
+    s_need_t = (s_tpl_len + UDP_CHUNK - 1) / UDP_CHUNK;
+    s_need_j = (s_js_len + UDP_CHUNK - 1) / UDP_CHUNK;
+    s_done = false;
+    s_req_q = xQueueCreate(512, sizeof(uint32_t));
+
+    uint8_t ip[4] = {0};
+    civ7_get_local_ip(ip);
+    char hdr[64];
+    int hl = snprintf(hdr, sizeof(hdr), "A%d:%d:%u.%u.%u.%u",
+                      s_need_t, s_need_j, ip[0], ip[1], ip[2], ip[3]);
+    for (int k = 0; k < 3; k++) {
         civ7_udp_send(UDP_PORT, (const uint8_t *)hdr, hl);
         vTaskDelay(pdMS_TO_TICKS(100));
     }
-    ESP_LOGI(TAG, "header %s (tpl %d chunks, js %d)", hdr, needT, needJ);
+    ESP_LOGI(TAG, "header %s (tpl %d chunks, js %d)", hdr, s_need_t, s_need_j);
 
-    static uint8_t buf[16 + UDP_CHUNK];
-    int drops = 0;
-    /* JS chunks first: they are tiny and must not land behind the template flood */
-    for (int pass = 0; pass < 3; pass++) {
-        for (int i = 0; i < needJ; i++) {
-            uint32_t off = APPLY_OFF + 4 + (uint32_t)i * UDP_CHUNK;
-            size_t len = js_len - (uint32_t)i * UDP_CHUNK;
-            if (len > UDP_CHUNK) len = UDP_CHUNK;
-            int pfx = snprintf((char *)buf, 16, "J%d:", i);
-            esp_partition_read(s_part, off, buf + pfx, len);
-            civ7_udp_send(UDP_PORT, buf, pfx + len);
+    /* One fast pass: the receiver NAKs whatever the radio dropped. */
+    for (int i = 0; i < s_need_j && !s_done; i++) {
+        send_chunk(true, i);
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    for (int i = 0; i < s_need_t && !s_done; i++) {
+        send_chunk(false, i);
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    ESP_LOGI(TAG, "pass done, waiting for NAKs");
+
+    /* Repair window: poll G, drain the receiver's missing-chunk requests. */
+    int rounds = 0;
+    while (!s_done && rounds < 60) {
+        civ7_udp_send(UDP_PORT, (const uint8_t *)"G", 1);
+        vTaskDelay(pdMS_TO_TICKS(150));
+        uint32_t v;
+        while (xQueueReceive(s_req_q, &v, 0) == pdTRUE) {
+            send_chunk((v >> 16) != 0, (int)(v & 0xffff));
             vTaskDelay(pdMS_TO_TICKS(2));
         }
+        rounds++;
     }
-    vTaskDelay(pdMS_TO_TICKS(300));
-
-
-    /* 3 passes with pacing: the Wi-Fi driver queue drops bursts */
-    for (int pass = 0; pass < 2; pass++) {
-        for (int i = 0; i < needT; i++) {
-            uint32_t off = TPL_OFF + 4 + (uint32_t)i * UDP_CHUNK;
-            size_t len = tpl_len - (uint32_t)i * UDP_CHUNK;
-            if (len > UDP_CHUNK) len = UDP_CHUNK;
-            int pfx = snprintf((char *)buf, 16, "T%d:", i);
-            esp_partition_read(s_part, off, buf + pfx, len);
-            int r = -1;
-            for (int k = 0; k < 20 && r != 0; k++) {
-                r = civ7_udp_send(UDP_PORT, buf, pfx + len);
-                if (r != 0) vTaskDelay(pdMS_TO_TICKS(1));
-            }
-            if (r != 0) drops++;
-            vTaskDelay(1);
-        }
-        ESP_LOGI(TAG, "pass %d done (drops %d)", pass + 1, drops);
-        vTaskDelay(pdMS_TO_TICKS(150));
-    }
-    for (int k = 0; k < 8; k++) {
-        civ7_udp_send(UDP_PORT, (const uint8_t *)"G", 1);
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-    ESP_LOGI(TAG, "UDP installer sent (%d x2 + %d datagrams, drops %d)", needT, needJ, drops);
+    ESP_LOGI(TAG, "UDP installer %s after %d repair rounds",
+             s_done ? "acknowledged" : "timed out", rounds);
 }
 
 void installer_run(void) {

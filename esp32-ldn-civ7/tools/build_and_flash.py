@@ -43,7 +43,7 @@ def main() -> int:
     ap.add_argument("--core", default=os.path.join(CIV, "core.js"),
                     help="shared CivSwitch core.js")
     ap.add_argument("--port", default=os.environ.get("ESPPORT", ""),
-                    help="serial port for flashing, e.g. /dev/cu.usbmodem2101")
+                    help="serial port for flashing, e.g. /dev/cu.usbmodemXXXX")
     ap.add_argument("--flash", action="store_true", help="flash after building")
     ap.add_argument("--erase", action="store_true", help="erase the whole flash first")
     ap.add_argument("--no-build", action="store_true", help="skip idf.py build")
