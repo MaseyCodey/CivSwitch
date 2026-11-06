@@ -10,3 +10,15 @@ esp32-usb-pad/main/macro_script.h
 node_modules/
 __pycache__/
 *.pyc
+
+# esp32-ldn: secrets and generated payloads
+esp32-ldn/prod.keys
+esp32-ldn/main/keys.h
+esp32-ldn/main/chat_payload.h
+esp32-ldn/blobs/
+esp32-ldn/build/
+esp32-ldn/sdkconfig
+esp32-ldn/sdkconfig.old
+esp32-ldn/managed_components/
+esp32-ldn/dependencies.lock
+prod.keys
